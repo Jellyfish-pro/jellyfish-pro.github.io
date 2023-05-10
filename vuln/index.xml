@@ -2,16 +2,16 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Vulns on test</title>
-    <link>http://lexshoukaku.github.io/vuln/</link>
+    <link>http://jellyfish-pro.github.io/vuln/</link>
     <description>Recent content in Vulns on test</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh-CN</language><atom:link href="http://lexshoukaku.github.io/vuln/index.xml" rel="self" type="application/rss+xml" />
+    <language>zh-CN</language><atom:link href="http://jellyfish-pro.github.io/vuln/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</guid>
       <description>CVE-2018-5767 TENDA-AC15路由器栈溢出漏洞复现 复现目的： 熟悉设备漏洞的环境模拟（qemu-user模式的利用） 了解基本的arm指令和函数调用方式，并且构建ROP利用链 漏洞基本信息： 该漏洞是18年出现的漏洞，由于没有对用户输入字符长度进行限制，导致包中的cookie字段过长时会产生栈溢出漏洞
 环境搭建 环境搭建前言 由于是arm架构的漏洞，所以我们需要利用qemu进行环境仿真。（如果有富哥们也可以直接买真机，顺便V我50）
 这里需要注意，ubuntu如果直接使用apt安装qemu，会因为qemu版本太低导致仿真环境出现问题，所以我选择的是自己编译高版本的qemu （也就是5.2.0，也没有多高）
@@ -36,10 +36,10 @@ sudo apt install uml-utilities bridge-utilssudo brctl addbr br0sudo brctl addi
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E-%E6%94%B9/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E-%E6%94%B9/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E-%E6%94%B9/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E-%E6%94%B9/</guid>
       <description>漏洞简介 该漏洞是存在于Sophos Firewall，版本小于等于18.5.3的身份验证绕过漏洞。
 该漏洞是因为sophos Firewall框架中java和prel对json数据的处理方式出现了偏差，产生的漏洞。
 漏洞分析 环境复现 sophos Firewall提供的不是物理设备，而是提供的虚拟机。直接去官网下载即可，需要注意的是，官网只能下载新版本，但是可以修改url中的版本号，下载有漏洞的版本。
@@ -74,10 +74,10 @@ import org.json.JSONObject;import org.json.JSONException;import java.io.*;cla
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</guid>
       <description>漏洞简介 该漏洞是存在于Sophos Firewall，版本小于等于18.5.3的身份验证绕过漏洞。
 该漏洞是因为sophos Firewall框架中java和prel对json数据的处理方式出现了偏差，产生的漏洞。
 环境复现 sophos Firewall提供的不是物理设备，而是提供的虚拟机。直接去官网下载即可，需要注意的是，官网只能下载新版本，但是可以修改url中的版本号，下载有漏洞的版本。
@@ -112,10 +112,10 @@ import org.json.JSONObject;import org.json.JSONException;import java.io.*;cla
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</guid>
       <description>CVE-2022-27596 威联通5.0.1sql注入漏洞 漏洞简介 该漏洞是威联通(qnap)旗下的NAS设备的固件上的数据库注入漏洞。
 固件版本为：
 ![image-20230403173907623](C:\Users\shangdi4sb\Desktop\1\CVE-2022-27596 威联通5.0.1sql注入漏洞.assets\image-20230403173907623.png)
@@ -136,10 +136,10 @@ v9 = s···if ( *(_QWORD *)(a8 + 24) ){v13 = *(const char **)(a8 + 24);v14
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</guid>
       <description>CVE-2022-29844 西数nas My_Cloud_Pro_Series_PR4100 ftp权限绕过漏洞 漏洞简介 该漏洞是存在于西数nas上的一个ftp权限绕过漏洞。其广泛存在于西数的多款nas设备中。但在设备中，ftp服务并不是默认开启的。故该漏洞的利用存在一定的限制。
 环境搭建 该漏洞是Luca Moro (@johncool__) 在Pwn2Own比赛中曝光的。故我们可以直接拿比赛中使用的固件。
 因为漏洞存在于ftp服务中，而西数nas设备的ftp服务来自于开源项目：Pure-FTPd。
@@ -167,10 +167,10 @@ bin文件夹下没有东西，那么整个系统是怎么运行的呢？我们�
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</guid>
       <description>CVE-2022-46641 D-Link dir-846命令注入漏洞 漏洞信息 D-Link dir-846路由，是D-Link生产的小型家用路由器。
 该漏洞是对用户输入的字符串检测不够严格造成的。
 固件版本：A1_FW100A43
@@ -196,10 +196,10 @@ sudo ./qemu-mipsel-static -L . ./usr/sbin/lighttpd -D -f ./etc/lighttpd/lighttpd
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E-%E6%94%B9/</link>
+      <link>http://jellyfish-pro.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E-%E6%94%B9/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E-%E6%94%B9/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E-%E6%94%B9/</guid>
       <description>RouterOS软路由线程同步漏洞 漏洞简介 该漏洞存在于RouterOS 6.38.4及以下版本。漏洞原理为未对 alloca()函数分配内存的大小做限制，导致alloca()函数可分配超过本线程内存块大小的内存，从而非法访问其他线程的内存。
 漏洞分析 RouterOS环境搭建 因为该漏洞为软路由漏洞，且有x86架构，故我们可使用VMware直接模拟。
 首先我们需要先下载Routeros的镜像，或者直接去官网下载镜像
@@ -228,10 +228,10 @@ RouterOS越狱 因为RouterOS原生操作系统是基于Linux系统复写的一�
     
     <item>
       <title></title>
-      <link>http://lexshoukaku.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</link>
+      <link>http://jellyfish-pro.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://lexshoukaku.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</guid>
+      <guid>http://jellyfish-pro.github.io/vuln/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</guid>
       <description>RouterOS软路由线程同步漏洞 漏洞简介 该漏洞存在于RouterOS 6.38.4及以下版本。漏洞原理为未对 alloca()函数分配内存的大小做限制，导致alloca()函数可分配超过本线程内存块大小的内存，从而非法访问其他线程的内存。
 漏洞复现 RouterOS环境搭建 因为该漏洞为软路由漏洞，且有x86架构，故我们可使用VMware直接模拟。
 首先我们需要先下载Routeros的镜像，或者直接去官网下载镜像
