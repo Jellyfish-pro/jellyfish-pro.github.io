@@ -7,6 +7,24 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language><atom:link href="https://jellyfish-pro.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>[置顶] 注意事项</title>
+      <link>https://jellyfish-pro.github.io/note/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</guid>
+      <description>这里总结了一些可以快速使用的命令，并不会涉及原理，如果您使用这些命令后报错或者是没有达到效果，请不要在此过多的纠结 </description>
+    </item>
+    
+    <item>
+      <title>[置顶] 注意事项</title>
+      <link>https://jellyfish-pro.github.io/posts/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/posts/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</guid>
+      <description>因为某些不可抗力，所以在您阅读以下文章时，会发现文章的结构有所缺失，请理解。 </description>
+    </item>
+    
+    <item>
       <title>CVE-2018-5767 TENDA-AC15路由器栈溢出漏洞复现</title>
       <link>https://jellyfish-pro.github.io/posts/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

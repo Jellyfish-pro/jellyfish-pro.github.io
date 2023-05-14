@@ -7,6 +7,15 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language><atom:link href="https://jellyfish-pro.github.io/note/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>[置顶] 注意事项</title>
+      <link>https://jellyfish-pro.github.io/note/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</guid>
+      <description>这里总结了一些可以快速使用的命令，并不会涉及原理，如果您使用这些命令后报错或者是没有达到效果，请不要在此过多的纠结 </description>
+    </item>
+    
+    <item>
       <title>qemu-system桥接设置</title>
       <link>https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
