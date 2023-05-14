@@ -5,12 +5,14 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>404 Page not found | CAI dog</title>
+<title>报错read-only file system解决方法 | CAI dog</title>
 <meta name="keywords" content="">
-<meta name="description" content="">
+<meta name="description" content="mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限">
 <meta name="author" content="shangdi4sb">
-<link rel="canonical" href="https://jellyfish-pro.github.io/404.html">
+<link rel="canonical" href="https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
 <link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
@@ -54,18 +56,74 @@
         }
 
     </style>
-</noscript><meta property="og:title" content="404 Page not found" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://jellyfish-pro.github.io/404.html" />
+</noscript><meta property="og:title" content="报错read-only file system解决方法" />
+<meta property="og:description" content="mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/" /><meta property="article:section" content="note" />
+
+
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="404 Page not found"/>
-<meta name="twitter:description" content=""/>
+<meta name="twitter:title" content="报错read-only file system解决方法"/>
+<meta name="twitter:description" content="mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限"/>
 
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "note",
+      "item": "https://jellyfish-pro.github.io/note/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "报错read-only file system解决方法",
+      "item": "https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "报错read-only file system解决方法",
+  "name": "报错read-only file system解决方法",
+  "description": "mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限",
+  "keywords": [
+    
+  ],
+  "articleBody": "mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限\n",
+  "wordCount" : "5",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
 </head>
 
-<body class="list" id="top">
+<body class="" id="top">
 <script>
     if (localStorage.getItem("pref-theme") === "dark") {
         document.body.classList.add('dark');
@@ -112,7 +170,7 @@
             </li>
             <li>
                 <a href="https://jellyfish-pro.github.io/" title="home">
-                    <span class="active">home</span>
+                    <span>home</span>
                 </a>
             </li>
             <li>
@@ -129,7 +187,37 @@
     </nav>
 </header>
 <main class="main">
-<div class="not-found">404</div>
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/note/">note</a></div>
+    <h1 class="post-title">
+      报错read-only file system解决方法
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><pre tabindex="0"><code>mount -o remount,rw /
+</code></pre><p>使用mount命令重新挂载根目录，给一个可读可写的权限</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/note/ubuntu20-%E6%97%A0setuptools%E4%B8%8B%E5%AE%89%E8%A3%85pip/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ubuntu20 无setuptools下安装pip</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
     </main>
     
 <footer class="footer">
@@ -199,6 +287,53 @@
         }
     })
 
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
 </script>
 </body>
 

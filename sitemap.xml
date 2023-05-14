@@ -2,26 +2,44 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://jellyfish-pro.github.io/posts/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/categories/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/posts/cve-2018-5767-tenda-ac15%E8%B7%AF%E7%94%B1%E5%99%A8%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/posts/cve-2022-1040-sophos%E8%BA%AB%E4%BB%BD%E9%AA%8C%E8%AF%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/posts/cve-2022-27596-%E5%A8%81%E8%81%94%E9%80%9A5.0.1sql%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/lvmeng_ng3_g2000l_firewall_upload_pathtraversal/</loc>
+    <loc>https://jellyfish-pro.github.io/posts/cve-2022-29844-%E8%A5%BF%E6%95%B0nas-my_cloud_pro_series_pr4100-ftp%E6%9D%83%E9%99%90%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</loc>
+    <loc>https://jellyfish-pro.github.io/posts/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/categories/</loc>
+    <loc>https://jellyfish-pro.github.io/note/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/</loc>
+    <loc>https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/posts/</loc>
+    <loc>https://jellyfish-pro.github.io/note/qemu%E7%BC%96%E8%AF%91/</loc>
   </url><url>
-    <loc>http://jellyfish-pro.github.io/tags/</loc>
+    <loc>https://jellyfish-pro.github.io/note/rinetd%E7%AB%AF%E5%8F%A3%E8%BD%AC%E5%8F%91/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/posts/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/search/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/note/shell/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/tags/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/note/tcpdump%E5%BF%AB%E9%80%9F%E4%BD%BF%E7%94%A8/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/note/ubuntu20-%E6%97%A0setuptools%E4%B8%8B%E5%AE%89%E8%A3%85pip/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/posts/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/</loc>
+  </url><url>
+    <loc>https://jellyfish-pro.github.io/posts/lvmeng_ng3_g2000l_firewall_upload_pathtraversal/</loc>
   </url>
 </urlset>
