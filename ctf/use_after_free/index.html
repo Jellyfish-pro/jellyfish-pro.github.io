@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>stacksmashes | CAI dog</title>
+<title>Use_After_Free | CAI dog</title>
 <meta name="keywords" content="">
 <meta name="description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
 首先查看一下保护：
@@ -79,7 +79,7 @@
         }
 
     </style>
-</noscript><meta property="og:title" content="stacksmashes" />
+</noscript><meta property="og:title" content="Use_After_Free" />
 <meta property="og:description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
 首先查看一下保护：
 可以发现这居然是一个32位程序，并且没有开启pie
@@ -110,7 +110,7 @@
 
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="stacksmashes"/>
+<meta name="twitter:title" content="Use_After_Free"/>
 <meta name="twitter:description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
 首先查看一下保护：
 可以发现这居然是一个32位程序，并且没有开启pie
@@ -151,7 +151,7 @@
     {
       "@type": "ListItem",
       "position":  3 ,
-      "name": "stacksmashes",
+      "name": "Use_After_Free",
       "item": "https://jellyfish-pro.github.io/ctf/use_after_free/"
     }
   ]
@@ -161,8 +161,8 @@
 {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  "headline": "stacksmashes",
-  "name": "stacksmashes",
+  "headline": "Use_After_Free",
+  "name": "Use_After_Free",
   "description": "此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)\n首先查看一下保护：\n可以发现这居然是一个32位程序，并且没有开启pie\n随后运行一下程序：\n可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。\n随后我们来到ida查看这些功能的细节：\n在查看添加函数时，我们发现存在一个名为v0的结构体：\n通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。\n**注意：**这里的content也是通过malloc函数分配的空间。\n随后我们看到删除函数：\n可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件\n结合刚刚程序的流程，我们可以得出一条利用方式：\n首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块\n**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。\n当我们创建两个note后，我们需要将这两个note给删除。\n这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：\n但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。\n这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。\n那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。\n最后数据就会变为这样：\n可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。\n如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。\n同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。\n#!/usr/bin/python3\r#Use_After_free_exp.py\r#lab 10 hacknote\rfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rp = process(\u0026#39;./hacknote\u0026#39;)\rmagic = 0x08048986\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.send(\u0026#39;1\u0026#39;)\rp.recvuntil(\u0026#39;Note size :\u0026#39;)\rp.send(\u0026#39;16\u0026#39;)\rp.recvuntil(\u0026#39;Content :\u0026#39;)\rp.send(\u0026#39;aaaa\u0026#39;)\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.send(\u0026#39;1\u0026#39;)\rp.recvuntil(\u0026#39;Note size :\u0026#39;)\rp.send(\u0026#39;16\u0026#39;)\rp.recvuntil(\u0026#39;Content :\u0026#39;)\rp.send(\u0026#39;bbbb\u0026#39;)\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.",
   "keywords": [
     
@@ -266,7 +266,7 @@
   <header class="post-header">
     <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
     <h1 class="post-title">
-      stacksmashes
+      Use_After_Free
     </h1>
     <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
 

