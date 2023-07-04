@@ -170,41 +170,6 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
-首先查看一下保护：
-可以发现这居然是一个32位程序，并且没有开启pie
-随后运行一下程序：
-可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
-随后我们来到ida查看这些功能的细节：
-在查看添加函数时，我们发现存在一个名为v0的结构体：
-通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
-**注意：**这里的content也是通过malloc函数分配的空间。
-随后我们看到删除函数：
-可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
-结合刚刚程序的流程，我们可以得出一条利用方式：
-首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
-**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
-当我们创建两个note后，我们需要将这两个note给删除。
-这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
-但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
-这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
-那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
-最后数据就会变为这样：
-可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
-如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
-同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
-#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p....</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to " href="https://jellyfish-pro.github.io/ctf/use_after_free/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
     <h2>enumcanary
     </h2>
   </header>
@@ -432,6 +397,32 @@ leave = MOV RSP, RBPPOP RBP 通过这个指令会将RBP的值赋给RSP，那么
   </div>
   <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to format4_new" href="https://jellyfish-pro.github.io/ctf/format4_new/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>format4_old
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看保护机制：
+32位程序，开启了栈溢出保护和NX，可以修改got表
+然后我们运行程序，查看程序的内容：
+可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
+根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
+然后我们在IDA中查看文件：
+这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
+现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
+答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
+而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
+所以这道题我们不能直接利用%n修改栈中的值来获得shell。
+那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
+1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
+所以我们还是要泄露程序的libc版本：
+from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to format4_old" href="https://jellyfish-pro.github.io/ctf/format4_old/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">
