@@ -24,18 +24,16 @@
       <description>CVE-2017-7921 海康威视权限绕过导致密码泄露漏洞 漏洞简介 该漏洞存在于海康威视摄像头设备上，因为逻辑错误，导致没有判断用户名和密码。
 环境搭建 这里使用的是海康威视的摄像头设备(DS-2CD1301D-I)，因为这个设备没有telnet和ssh命令，所以无法远程直接连上去。因此这里是连接的串口，串口是由师兄之前测试其他漏洞的时候焊上去的，故这里不介绍如何连接串口。
 修改psh 连接串口后，也无法直接获取shell，因为海康威视自己写了一个shell名叫psh，如果直接启动设备的话，会直接取得psh，如下：
-![image-20230621114823502](/vuln/CVE-2017-7921 hakvision_bypass_rce.img/image-20230621114823502.png)
 如果想要绕过这个psh，我们则需要修改内核参数，拿到普通shell。
 首先我们ctrl+U进入设置：
-![image-20230621114837009](/vuln/CVE-2017-7921 hakvision_bypass_rce.img/image-20230621114837009.png)
 随后使用如下命令修改内核参数：
 HKVS # printenv bootargs bootargs=console=ttyS0,115200 root=/dev/ram0 mem=42MHKVS # setenv bootargs console=ttyS0,115200 root=/dev/ram0 mem=42M singleHKVS # saveenv Saving Environment to SPI Flash...Erasing SPI flash...Writing to SPI flash...done 修改后使用reset命令重启：
-![image-20230621115313493](/vuln/CVE-2017-7921 hakvision_bypass_rce.img/image-20230621115313493.png)
 需要注意的是，这里的内核还没有被加载，只是内核提供的一个手动启动内核的环境。因此我们在这里修改了psh后，再启动内核后，就可以获得正常的shell了。
 #!/bin/bashrm /bin/pshtouch /bin/pshecho &amp;#34;#!/bin/bash&amp;#34; &amp;gt; /bin/pshecho &amp;#34;/bin/bash&amp;#34; &amp;gt;&amp;gt; /bin/pshchmod +x /bin/psh 随后执行linuxrc内核就可以获得普通的shell：
-![image-20230621115422960](/vuln/CVE-2017-7921 hakvision_bypass_rce.img/image-20230621115422960.png)
 其实这个阶段如果不想手动修改psh的话，可以修改ip地址，使用挂载共享文件夹的方式，从共享文件夹中复制一个过来。
-传递文件 虽然现在我们获得了正常的shell，但是设备上的busybox是被严重阉割过的，以至于连wget和curl命令都没有，也没有scp命令。没有这些命令，应该怎么传递文件呢？</description>
+传递文件 虽然现在我们获得了正常的shell，但是设备上的busybox是被严重阉割过的，以至于连wget和curl命令都没有，也没有scp命令。没有这些命令，应该怎么传递文件呢？
+我们可以使用nfs共享文件夹：
+mount -t nfs 192.168.110.30:/tmp/nfs /run -o nolock 随后把要传输的文件复制到共享文件夹就好了。</description>
     </item>
     
     <item>
