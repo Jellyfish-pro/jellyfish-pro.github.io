@@ -16,6 +16,54 @@
     </item>
     
     <item>
+      <title>ida未正确识别数据类型</title>
+      <link>https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E6%AD%A3%E7%A1%AE%E8%AF%86%E5%88%AB%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E6%AD%A3%E7%A1%AE%E8%AF%86%E5%88%AB%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/</guid>
+      <description>在ida中有事会出现如下情况：
+可以看到这里正确的数据类型应该为word，但是ida并没有正确识别，而是将word识别为byte。
+这时需要我们手动该更数据类型，快捷键按D。
+更改后为：</description>
+    </item>
+    
+    <item>
+      <title>ida未识别到函数</title>
+      <link>https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E8%AF%86%E5%88%AB%E5%88%B0%E5%87%BD%E6%95%B0/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E8%AF%86%E5%88%AB%E5%88%B0%E5%87%BD%E6%95%B0/</guid>
+      <description>ida在识别mips和arm时，容易遇到未识别到函数的问题
+看上去就是ida汇编显示红色：
+这种情况就是ida没有自动识别到函数的边界，这时候就需要我们来指定。
+首先选中边界点：
+然后按如下顺序点击按钮
+Edit -&amp;gt; Functions -&amp;gt; Create function 或者按快捷键p
+随后ida就可以自动识别了</description>
+    </item>
+    
+    <item>
+      <title>nfs共享文件夹命令</title>
+      <link>https://jellyfish-pro.github.io/note/nfs%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E5%A4%B9%E5%91%BD%E4%BB%A4/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/nfs%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E5%A4%B9%E5%91%BD%E4%BB%A4/</guid>
+      <description>在一些设备上，比如海康威视，使用的是阉割的busybox，没有wget、curl，甚至没有nc
+这时候可以选择使用nfs共享文件夹命令
+使用之前需要进行安装：
+sudo apt-get install nfs-kernel-server # 安装 NFS服务器端sudo apt-get install nfs-common # 安装 NFS客户端 随后打开服务：
+sudo /etc/init.d/nfs-kernel-server start 或者 sudo /etc/init.d/nfs-kernel-server restart 使用如下命令可以查看nfs服务状态：
+service nfs-server status 随后我们写配置文件：
+sudo vim /etc/exports 将下面内容复制到配置文件中
+/home/shangdi4sb/nfs *(rw,sync,no_root_squash,no_subtree_check) *代表了所有的网段都可以访问。
+rw代表了可读可写。
+这个我只使用nfs传递文件，故不对其他的几个参数做过多的解释。
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs 可以看到这个结构很简单，就不多解释了
+如果显示挂载失败可以尝试*-o*参数
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs -o nolcok </description>
+    </item>
+    
+    <item>
       <title>qemu-system桥接设置</title>
       <link>https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -114,6 +162,20 @@ wget https://bootstrap.pypa.io/pip/2.7/get-pip.py -O get-pip.pypython get-pip.p
       
       <guid>https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/</guid>
       <description>mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限</description>
+    </item>
+    
+    <item>
+      <title>设备无scp命令时将文件传出的方法</title>
+      <link>https://jellyfish-pro.github.io/note/%E8%AE%BE%E5%A4%87%E6%97%A0scp%E5%91%BD%E4%BB%A4%E6%97%B6%E5%B0%86%E6%96%87%E4%BB%B6%E4%BC%A0%E5%87%BA%E7%9A%84%E6%96%B9%E6%B3%95/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/%E8%AE%BE%E5%A4%87%E6%97%A0scp%E5%91%BD%E4%BB%A4%E6%97%B6%E5%B0%86%E6%96%87%E4%BB%B6%E4%BC%A0%E5%87%BA%E7%9A%84%E6%96%B9%E6%B3%95/</guid>
+      <description>首先检查是否有wget或curl
+然后检查设备的busybox中是否有nc命令
+本地开启http服务，准备好对应架构的busybox，利用wget或curl获取busybox
+随后在本地打开nc准备接受：
+nc -l port &amp;gt; your_file 在设备上使用命令：
+./busybox nc ip port &amp;lt; your_file </description>
     </item>
     
   </channel>

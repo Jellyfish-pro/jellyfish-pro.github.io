@@ -170,6 +170,63 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>ida未正确识别数据类型
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在ida中有事会出现如下情况：
+可以看到这里正确的数据类型应该为word，但是ida并没有正确识别，而是将word识别为byte。
+这时需要我们手动该更数据类型，快捷键按D。
+更改后为：</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ida未正确识别数据类型" href="https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E6%AD%A3%E7%A1%AE%E8%AF%86%E5%88%AB%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ida未识别到函数
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>ida在识别mips和arm时，容易遇到未识别到函数的问题
+看上去就是ida汇编显示红色：
+这种情况就是ida没有自动识别到函数的边界，这时候就需要我们来指定。
+首先选中边界点：
+然后按如下顺序点击按钮
+Edit -&gt; Functions -&gt; Create function 或者按快捷键p
+随后ida就可以自动识别了</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ida未识别到函数" href="https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E8%AF%86%E5%88%AB%E5%88%B0%E5%87%BD%E6%95%B0/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>nfs共享文件夹命令
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在一些设备上，比如海康威视，使用的是阉割的busybox，没有wget、curl，甚至没有nc
+这时候可以选择使用nfs共享文件夹命令
+使用之前需要进行安装：
+sudo apt-get install nfs-kernel-server # 安装 NFS服务器端sudo apt-get install nfs-common # 安装 NFS客户端 随后打开服务：
+sudo /etc/init.d/nfs-kernel-server start 或者 sudo /etc/init.d/nfs-kernel-server restart 使用如下命令可以查看nfs服务状态：
+service nfs-server status 随后我们写配置文件：
+sudo vim /etc/exports 将下面内容复制到配置文件中
+/home/shangdi4sb/nfs *(rw,sync,no_root_squash,no_subtree_check) *代表了所有的网段都可以访问。
+rw代表了可读可写。
+这个我只使用nfs传递文件，故不对其他的几个参数做过多的解释。
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs 可以看到这个结构很简单，就不多解释了
+如果显示挂载失败可以尝试*-o*参数
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs -o nolcok </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to nfs共享文件夹命令" href="https://jellyfish-pro.github.io/note/nfs%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E5%A4%B9%E5%91%BD%E4%BB%A4/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>qemu-system桥接设置
     </h2>
   </header>
@@ -277,18 +334,12 @@ wget https://bootstrap.pypa.io/pip/2.7/get-pip.py -O get-pip.pypython get-pip.p
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to ubuntu20 无setuptools下安装pip" href="https://jellyfish-pro.github.io/note/ubuntu20-%E6%97%A0setuptools%E4%B8%8B%E5%AE%89%E8%A3%85pip/"></a>
 </article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>报错read-only file system解决方法
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to 报错read-only file system解决方法" href="https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/"></a>
-</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="next" href="https://jellyfish-pro.github.io/note/page/2/">Next&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
     </main>
     
 <footer class="footer">

