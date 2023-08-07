@@ -526,6 +526,21 @@ Edit -&amp;gt; Functions -&amp;gt; Create function 或者按快捷键p
     </item>
     
     <item>
+      <title>mips交叉编译</title>
+      <link>https://jellyfish-pro.github.io/note/mips%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/mips%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</guid>
+      <description>mips中需要重点关注的几个寄存器 $a0-$a3进行传参 $sp为栈顶寄存器，$fp为栈底寄存器 $ra则存放返回地址 安装交叉连接工具 大段：
+sudo apt-get install linux-libc-dev-mips-crosssudo apt-get install libc6-mips-cross libc6-dev-mips-crosssudo apt-get install binutils-mips-linux-gnu gcc-mips-linux-gnusudo apt-get install g++-mips-linux-gnu 小段：
+sudo apt-get install linux-libc-dev-mipsel-crosssudo apt-get install libc6-mipsel-cross libc6-dev-mipsel-crosssudo apt-get install binutils-mipsel-linux-gnu gcc-mipsel-linux-gnusudo apt-get install g++-mipsel-linux-gnu 交叉编译 //mips_test.c#include &amp;lt;stdio.h&amp;gt;int main(void){print(&amp;#34;hello world&amp;#34;);return 0;} 接下来使用交叉编译工具编译
+mips-linux-gnu-gcc mips_test.c -o test 需要注意的是，这样直接编译出来的结果是动态链接，所以直接使用qemu用户模式，会报错。
+解决方法为使用qemu用户模式的-L参数，临时更换根目录：
+qemu-mips-static -L /usr/mips-linux-gnu/ test 或者是使用静态编译：
+mips-linux-gnu-gcc mips_test.c -static -o test </description>
+    </item>
+    
+    <item>
       <title>nfs共享文件夹命令</title>
       <link>https://jellyfish-pro.github.io/note/nfs%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E5%A4%B9%E5%91%BD%E4%BB%A4/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -203,6 +203,24 @@ Edit -&gt; Functions -&gt; Create function 或者按快捷键p
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>mips交叉编译
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>mips中需要重点关注的几个寄存器 $a0-$a3进行传参 $sp为栈顶寄存器，$fp为栈底寄存器 $ra则存放返回地址 安装交叉连接工具 大段：
+sudo apt-get install linux-libc-dev-mips-crosssudo apt-get install libc6-mips-cross libc6-dev-mips-crosssudo apt-get install binutils-mips-linux-gnu gcc-mips-linux-gnusudo apt-get install g&#43;&#43;-mips-linux-gnu 小段：
+sudo apt-get install linux-libc-dev-mipsel-crosssudo apt-get install libc6-mipsel-cross libc6-dev-mipsel-crosssudo apt-get install binutils-mipsel-linux-gnu gcc-mipsel-linux-gnusudo apt-get install g&#43;&#43;-mipsel-linux-gnu 交叉编译 //mips_test.c#include &lt;stdio.h&gt;int main(void){print(&#34;hello world&#34;);return 0;} 接下来使用交叉编译工具编译
+mips-linux-gnu-gcc mips_test.c -o test 需要注意的是，这样直接编译出来的结果是动态链接，所以直接使用qemu用户模式，会报错。
+解决方法为使用qemu用户模式的-L参数，临时更换根目录：
+qemu-mips-static -L /usr/mips-linux-gnu/ test 或者是使用静态编译：
+mips-linux-gnu-gcc mips_test.c -static -o test </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to mips交叉编译" href="https://jellyfish-pro.github.io/note/mips%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>nfs共享文件夹命令
     </h2>
   </header>
@@ -317,22 +335,6 @@ tcpdump tcp或者tcpdump icmp </p>
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to tcpdump快速使用" href="https://jellyfish-pro.github.io/note/tcpdump%E5%BF%AB%E9%80%9F%E4%BD%BF%E7%94%A8/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>ubuntu20 无setuptools下安装pip
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Ubuntu20及以上版本，虽会自带python2，但python2中不会自带pip和setuptools这两个模块。
-同时使用Ubuntu20及以上版已经将python-pip移除apt库。
-故，我们不能使用tar.gz安装pip和apt安装pip。
-这时我们可以去pipy下载对应python2的pip源码：
-wget https://bootstrap.pypa.io/pip/2.7/get-pip.py -O get-pip.pypython get-pip.py </p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to ubuntu20 无setuptools下安装pip" href="https://jellyfish-pro.github.io/note/ubuntu20-%E6%97%A0setuptools%E4%B8%8B%E5%AE%89%E8%A3%85pip/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">
