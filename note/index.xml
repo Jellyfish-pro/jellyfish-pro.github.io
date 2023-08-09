@@ -16,6 +16,18 @@
     </item>
     
     <item>
+      <title>arm交叉编译</title>
+      <link>https://jellyfish-pro.github.io/note/arm%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/arm%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</guid>
+      <description>arm交叉编译 环境搭建 //arm交叉编译链接工具：sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi//arm浮点型交叉编译链接工具：sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf 编译 //arm_test.cinclude &amp;lt;stdio.h&amp;gt;int main(void){printf(&amp;#34;hello world\n&amp;#34;);return 0;} 同样，如果直接编译的话，是动态编译：
+arm-linux-gnueabi-gcc arm_test.c -o test 需要使用qemu的-L参数指定动态链接库：
+qemu-arm-static -L /usr/arm-linux-gnueabi test 也可以使用使用静态链接：
+arm-linux-gnueabi-gcc arm_test.c -static -o test </description>
+    </item>
+    
+    <item>
       <title>ida未正确识别数据类型</title>
       <link>https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E6%AD%A3%E7%A1%AE%E8%AF%86%E5%88%AB%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

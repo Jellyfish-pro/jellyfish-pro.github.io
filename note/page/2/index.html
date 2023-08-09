@@ -158,6 +158,27 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>tcpdump快速使用
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在windows上可以使用burpsuite进行抓包。但burpsuite在linux上不便于安装。
+在linux上我们可以使用tcpdump命令。
+具体安装流程我们略过，如要安装可以直接百度。
+通过host参数进行IP地址过滤：
+tcpdump -n host 192.168.110.129 -n表示不把ip解析成域名
+scr可以筛选来源地址：
+tcpdump scr 192.168.110.129 dst可以筛选目的地址：
+tcpdump dst 192.168.110.129 port指定端口
+tcpdump port 8080 若要指定协议，则直接输入就好了：
+tcpdump tcp或者tcpdump icmp </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to tcpdump快速使用" href="https://jellyfish-pro.github.io/note/tcpdump%E5%BF%AB%E9%80%9F%E4%BD%BF%E7%94%A8/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>ubuntu20 无setuptools下安装pip
     </h2>
   </header>

