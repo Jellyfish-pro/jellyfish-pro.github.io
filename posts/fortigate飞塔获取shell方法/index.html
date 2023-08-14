@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>FortiGate飞塔获取shell方法 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="FortiGate飞塔获取shell方法 获取根目录文件 我们首先找到安装飞塔虚拟机的路径：
+看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：
+随后在Ubuntu中就可以看到这个硬盘：
+我们将这个256M大小的区域挂载到我们指定的文件夹下：
+sudo mount /dev/nvme0n1p1 /mnt/fortigate/ 就可以看到被打包好的飞塔根文件目录：
+我们将这个文件复制出来，然后解压：
+gzip -d rootfs.gzsudo cpio -idmv &lt; ./rootfssudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xzsudo chroot . /sbin/ftar -xf /bin.tar patch原init 随后我们找到./bin/init，将其放入ida中，这里ida可能要加载半天。
+在main函数中，我们可以看到如下的逻辑：
+请注意这两个if语句。check_xor()和check_rootfs()这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：
+第一点：
+patch前：
+patch后：
+第二点：
+patch前：
+patch后：
+随后我们保存patch，将保存下来的init替换原来的./bin/init。
+替换了init后，我们需要将busybox放入bin目录下：
+同时，删除原来bin目录下的sh文件，替换为软连接指向busybox
+rm -rf ./bin/shsudo ln -s /bin/busybox sh 接着我们写一个后门文件：
+#include &lt;stdio.h&gt;void shell(){system(&#34;/bin/busybox id&#34;, 0, 0);system(&#34;/bin/busybox killall sshd &amp;&amp; /bin/busybox telnetd -l /bin/sh -b 0.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/posts/fortigate%E9%A3%9E%E5%A1%94%E8%8E%B7%E5%8F%96shell%E6%96%B9%E6%B3%95/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="FortiGate飞塔获取shell方法" />
+<meta property="og:description" content="FortiGate飞塔获取shell方法 获取根目录文件 我们首先找到安装飞塔虚拟机的路径：
+看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：
+随后在Ubuntu中就可以看到这个硬盘：
+我们将这个256M大小的区域挂载到我们指定的文件夹下：
+sudo mount /dev/nvme0n1p1 /mnt/fortigate/ 就可以看到被打包好的飞塔根文件目录：
+我们将这个文件复制出来，然后解压：
+gzip -d rootfs.gzsudo cpio -idmv &lt; ./rootfssudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xzsudo chroot . /sbin/ftar -xf /bin.tar patch原init 随后我们找到./bin/init，将其放入ida中，这里ida可能要加载半天。
+在main函数中，我们可以看到如下的逻辑：
+请注意这两个if语句。check_xor()和check_rootfs()这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：
+第一点：
+patch前：
+patch后：
+第二点：
+patch前：
+patch后：
+随后我们保存patch，将保存下来的init替换原来的./bin/init。
+替换了init后，我们需要将busybox放入bin目录下：
+同时，删除原来bin目录下的sh文件，替换为软连接指向busybox
+rm -rf ./bin/shsudo ln -s /bin/busybox sh 接着我们写一个后门文件：
+#include &lt;stdio.h&gt;void shell(){system(&#34;/bin/busybox id&#34;, 0, 0);system(&#34;/bin/busybox killall sshd &amp;&amp; /bin/busybox telnetd -l /bin/sh -b 0." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/posts/fortigate%E9%A3%9E%E5%A1%94%E8%8E%B7%E5%8F%96shell%E6%96%B9%E6%B3%95/" /><meta property="article:section" content="posts" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="FortiGate飞塔获取shell方法"/>
+<meta name="twitter:description" content="FortiGate飞塔获取shell方法 获取根目录文件 我们首先找到安装飞塔虚拟机的路径：
+看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：
+随后在Ubuntu中就可以看到这个硬盘：
+我们将这个256M大小的区域挂载到我们指定的文件夹下：
+sudo mount /dev/nvme0n1p1 /mnt/fortigate/ 就可以看到被打包好的飞塔根文件目录：
+我们将这个文件复制出来，然后解压：
+gzip -d rootfs.gzsudo cpio -idmv &lt; ./rootfssudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xzsudo chroot . /sbin/ftar -xf /bin.tar patch原init 随后我们找到./bin/init，将其放入ida中，这里ida可能要加载半天。
+在main函数中，我们可以看到如下的逻辑：
+请注意这两个if语句。check_xor()和check_rootfs()这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：
+第一点：
+patch前：
+patch后：
+第二点：
+patch前：
+patch后：
+随后我们保存patch，将保存下来的init替换原来的./bin/init。
+替换了init后，我们需要将busybox放入bin目录下：
+同时，删除原来bin目录下的sh文件，替换为软连接指向busybox
+rm -rf ./bin/shsudo ln -s /bin/busybox sh 接着我们写一个后门文件：
+#include &lt;stdio.h&gt;void shell(){system(&#34;/bin/busybox id&#34;, 0, 0);system(&#34;/bin/busybox killall sshd &amp;&amp; /bin/busybox telnetd -l /bin/sh -b 0."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "vuln",
+      "item": "https://jellyfish-pro.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "FortiGate飞塔获取shell方法",
+      "item": "https://jellyfish-pro.github.io/posts/fortigate%E9%A3%9E%E5%A1%94%E8%8E%B7%E5%8F%96shell%E6%96%B9%E6%B3%95/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "FortiGate飞塔获取shell方法",
+  "name": "FortiGate飞塔获取shell方法",
+  "description": "FortiGate飞塔获取shell方法 获取根目录文件 我们首先找到安装飞塔虚拟机的路径：\n看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：\n随后在Ubuntu中就可以看到这个硬盘：\n我们将这个256M大小的区域挂载到我们指定的文件夹下：\nsudo mount /dev/nvme0n1p1 /mnt/fortigate/ 就可以看到被打包好的飞塔根文件目录：\n我们将这个文件复制出来，然后解压：\ngzip -d rootfs.gz\rsudo cpio -idmv \u0026lt; ./rootfs\rsudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xz\rsudo chroot . /sbin/ftar -xf /bin.tar patch原init 随后我们找到./bin/init，将其放入ida中，这里ida可能要加载半天。\n在main函数中，我们可以看到如下的逻辑：\n请注意这两个if语句。check_xor()和check_rootfs()这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：\n第一点：\npatch前：\npatch后：\n第二点：\npatch前：\npatch后：\n随后我们保存patch，将保存下来的init替换原来的./bin/init。\n替换了init后，我们需要将busybox放入bin目录下：\n同时，删除原来bin目录下的sh文件，替换为软连接指向busybox\nrm -rf ./bin/sh\rsudo ln -s /bin/busybox sh 接着我们写一个后门文件：\n#include \u0026lt;stdio.h\u0026gt;\rvoid shell(){\rsystem(\u0026#34;/bin/busybox id\u0026#34;, 0, 0);\rsystem(\u0026#34;/bin/busybox killall sshd \u0026amp;\u0026amp; /bin/busybox telnetd -l /bin/sh -b 0.",
+  "keywords": [
+    
+  ],
+  "articleBody": "FortiGate飞塔获取shell方法 获取根目录文件 我们首先找到安装飞塔虚拟机的路径：\n看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：\n随后在Ubuntu中就可以看到这个硬盘：\n我们将这个256M大小的区域挂载到我们指定的文件夹下：\nsudo mount /dev/nvme0n1p1 /mnt/fortigate/ 就可以看到被打包好的飞塔根文件目录：\n我们将这个文件复制出来，然后解压：\ngzip -d rootfs.gz\rsudo cpio -idmv \u003c ./rootfs\rsudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xz\rsudo chroot . /sbin/ftar -xf /bin.tar patch原init 随后我们找到./bin/init，将其放入ida中，这里ida可能要加载半天。\n在main函数中，我们可以看到如下的逻辑：\n请注意这两个if语句。check_xor()和check_rootfs()这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：\n第一点：\npatch前：\npatch后：\n第二点：\npatch前：\npatch后：\n随后我们保存patch，将保存下来的init替换原来的./bin/init。\n替换了init后，我们需要将busybox放入bin目录下：\n同时，删除原来bin目录下的sh文件，替换为软连接指向busybox\nrm -rf ./bin/sh\rsudo ln -s /bin/busybox sh 接着我们写一个后门文件：\n#include void shell(){\rsystem(\"/bin/busybox id\", 0, 0);\rsystem(\"/bin/busybox killall sshd \u0026\u0026 /bin/busybox telnetd -l /bin/sh -b 0.0.0.0 -p 22\", 0, 0);\rreturn;\r}\rint main(int argc, char const *argv[])\r{\rshell();\rreturn 0;\r} gcc -g shell.c -static -o smartctl 将编译后的后面文件改名为smartctl，替换原来的/bin/smartctl\n当然这里为了方便也可以将gdb放入其中，这里只能使用gdb而不能使用gdbserver。\n然后，重新打包：\nsudo chroot . /sbin/ftar -cf bin.tar ./bin\rsudo chroot . /sbin/xz --check=sha256 -e bin.tar\rsu root\rfind . -path './bin' -prune -o -print |cpio -H newc -o \u003e ../make/rootfs.raw\rcd ../make\rcat rootfs.raw | gzip \u003e rootfs.gz 打包完成后，就可以看到新的rootfs.gz：\n我们将这个rootfs.gz替换掉原来硬盘中的rootfs.gz。\n随后把硬盘替换掉原来的硬盘。\n调试内核 在硬盘中，我们可以看到一个叫做flatkc的文件，我们利用vmlinux-to-elf工具可以将bzImage变为elf文件。\n成功后将elf文件放入ida，找到fgt_verify()函数的调用处：\n随后我们使用vmware内核调试模式：\n打开飞塔虚拟机的目录 找到.vmx文件，使用文本打开 在最后写入如下信息 debugStub.listen.guest64 = \"TRUE\"\rdebugStub.listen.guest64.remote = \"TRUE\"\rdebugStub.port.guest64 = \"12345\"\rdebugStub.listen.guest32 = \"TRUE\"\rdebugStub.listen.guest32.remote = \"TRUE\"\rdebugStub.port.guest32 = \"12346\" 随后在ubuntu打开gdb，远程调试内核，注意这里的ip是虚拟机的虚拟网卡的ip：\n(gdb) target remote 192.168.113.1:12345 然后启动飞塔，等待飞塔加载内核时，使用gdb连接上去\n将断点打在刚刚那个test eax eax地址处，让程序跑起来：\n程序被断住后，将eax改为0，然后继续运行：\n(gdb) set $eax=0\r(gdb) c 当飞塔出现*System is staring…*字符就证明内核验证成功了\n使用之前的密码登录，登录后执行smartctl命令，启动刚刚我们的后门程序：\ndiag hardware smartctl 因为刚刚的后面程序会执行id命令和telnet命令，所以飞塔回显id命令，就证明后门程序执行了，我们在ubuntu上尝试使用telnet连接：\n这样就成功获取飞塔的shell\n",
+  "wordCount" : "188",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/posts/fortigate%E9%A3%9E%E5%A1%94%E8%8E%B7%E5%8F%96shell%E6%96%B9%E6%B3%95/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/posts/">vuln</a></div>
+    <h1 class="post-title">
+      FortiGate飞塔获取shell方法
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#fortigate%e9%a3%9e%e5%a1%94%e8%8e%b7%e5%8f%96shell%e6%96%b9%e6%b3%95" aria-label="FortiGate飞塔获取shell方法">FortiGate飞塔获取shell方法</a><ul>
+                        
+                <li>
+                    <a href="#%e8%8e%b7%e5%8f%96%e6%a0%b9%e7%9b%ae%e5%bd%95%e6%96%87%e4%bb%b6" aria-label="获取根目录文件">获取根目录文件</a></li>
+                <li>
+                    <a href="#patch%e5%8e%9finit" aria-label="patch原init">patch原init</a></li>
+                <li>
+                    <a href="#%e8%b0%83%e8%af%95%e5%86%85%e6%a0%b8" aria-label="调试内核">调试内核</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h3 id="fortigate飞塔获取shell方法">FortiGate飞塔获取shell方法<a hidden class="anchor" aria-hidden="true" href="#fortigate飞塔获取shell方法">#</a></h3>
+<h4 id="获取根目录文件">获取根目录文件<a hidden class="anchor" aria-hidden="true" href="#获取根目录文件">#</a></h4>
+<p>我们首先找到安装飞塔虚拟机的路径：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807140138980.png" alt="image-20230807140138980"  />
+</p>
+<p>看到这两个VMware硬盘文件，将其中这个较大的复制出来，添加到Ubuntu下：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807140737186.png" alt="image-20230807140737186"  />
+</p>
+<p>随后在Ubuntu中就可以看到这个硬盘：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807140915117.png" alt="image-20230807140915117"  />
+</p>
+<p>我们将这个256M大小的区域挂载到我们指定的文件夹下：</p>
+<pre tabindex="0"><code>sudo mount /dev/nvme0n1p1 /mnt/fortigate/
+</code></pre><p>就可以看到被打包好的飞塔根文件目录：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807141350761.png" alt="image-20230807141350761"  />
+</p>
+<p>我们将这个文件复制出来，然后解压：</p>
+<pre tabindex="0"><code>gzip -d rootfs.gz
+sudo cpio -idmv &lt; ./rootfs
+sudo chroot . /sbin/xz --check=sha256 -d /bin.tar.xz
+sudo chroot . /sbin/ftar -xf /bin.tar
+</code></pre><p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807141738020.png" alt="image-20230807141738020"  />
+</p>
+<h4 id="patch原init">patch原init<a hidden class="anchor" aria-hidden="true" href="#patch原init">#</a></h4>
+<p>随后我们找到<code>./bin/init</code>，将其放入ida中，这里ida可能要加载半天。</p>
+<p>在main函数中，我们可以看到如下的逻辑：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807165646576.png" alt="image-20230807165646576"  />
+</p>
+<p>请注意这两个if语句。<code>check_xor()</code>和<code>check_rootfs()</code>这两个函数的主要功能是对系统和根文件系统进行检查，因为后面我们要更改根文件系统，所以这里需要将这两个if给patch掉：</p>
+<p>第一点：</p>
+<p>patch前：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807172139948.png" alt="image-20230807172139948"  />
+</p>
+<p>patch后：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807172251683.png" alt="image-20230807172251683"  />
+</p>
+<p>第二点：</p>
+<p>patch前：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807172343151.png" alt="image-20230807172343151"  />
+</p>
+<p>patch后：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807172417646.png" alt="image-20230807172417646"  />
+</p>
+<p>随后我们保存patch，将保存下来的init替换原来的<code>./bin/init</code>。</p>
+<p>替换了init后，我们需要将busybox放入bin目录下：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807173324994.png" alt="image-20230807173324994"  />
+</p>
+<p>同时，删除原来bin目录下的sh文件，替换为软连接指向busybox</p>
+<pre tabindex="0"><code>rm -rf ./bin/sh
+sudo ln -s /bin/busybox sh
+</code></pre><p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230807173809397.png" alt="image-20230807173809397"  />
+</p>
+<p>接着我们写一个后门文件：</p>
+<pre tabindex="0"><code>#include &lt;stdio.h&gt;
+
+void shell(){
+        system(&#34;/bin/busybox id&#34;, 0, 0);
+        system(&#34;/bin/busybox killall sshd &amp;&amp; /bin/busybox telnetd -l /bin/sh -b 0.0.0.0 -p 22&#34;, 0, 0);
+        return;
+}
+
+int main(int argc, char const *argv[])
+{
+        shell();
+        return 0;
+}
+</code></pre><pre tabindex="0"><code>gcc -g shell.c -static -o smartctl
+</code></pre><p>将编译后的后面文件改名为smartctl，替换原来的<code>/bin/smartctl</code></p>
+<p>当然这里为了方便也可以将gdb放入其中，这里只能使用gdb而不能使用gdbserver。</p>
+<p>然后，重新打包：</p>
+<pre tabindex="0"><code>sudo chroot . /sbin/ftar -cf bin.tar ./bin
+sudo chroot . /sbin/xz --check=sha256 -e bin.tar
+su root
+find . -path &#39;./bin&#39; -prune -o -print |cpio -H newc -o &gt; ../make/rootfs.raw
+cd ../make
+cat rootfs.raw | gzip &gt; rootfs.gz
+</code></pre><p>打包完成后，就可以看到新的<code>rootfs.gz</code>：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808090344976.png" alt="image-20230808090344976"  />
+</p>
+<p>我们将这个<code>rootfs.gz</code>替换掉原来硬盘中的<code>rootfs.gz</code>。</p>
+<p>随后把硬盘替换掉原来的硬盘。</p>
+<h4 id="调试内核">调试内核<a hidden class="anchor" aria-hidden="true" href="#调试内核">#</a></h4>
+<p>在硬盘中，我们可以看到一个叫做<code>flatkc</code>的文件，我们利用<a href="https://github.com/marin-m/vmlinux-to-elf">vmlinux-to-elf</a>工具可以将<code>bzImage</code>变为<code>elf</code>文件。</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808100849701.png" alt="image-20230808100849701"  />
+</p>
+<p>成功后将elf文件放入ida，找到<code>fgt_verify()</code>函数的调用处：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808101932624.png" alt="image-20230808101932624"  />
+</p>
+<p>随后我们使用vmware内核调试模式：</p>
+<ol>
+<li>打开飞塔虚拟机的目录</li>
+<li>找到<code>.vmx</code>文件，使用文本打开</li>
+<li>在最后写入如下信息</li>
+</ol>
+<pre tabindex="0"><code>debugStub.listen.guest64 = &#34;TRUE&#34;
+debugStub.listen.guest64.remote = &#34;TRUE&#34;
+debugStub.port.guest64 = &#34;12345&#34;
+debugStub.listen.guest32 = &#34;TRUE&#34;
+debugStub.listen.guest32.remote = &#34;TRUE&#34;
+debugStub.port.guest32 = &#34;12346&#34;
+</code></pre><p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808110439347.png" alt="image-20230808110439347"  />
+</p>
+<p>随后在ubuntu打开gdb，远程调试内核，注意这里的ip是虚拟机的虚拟网卡的ip：</p>
+<pre tabindex="0"><code>(gdb) target remote 192.168.113.1:12345
+</code></pre><p>然后启动飞塔，等待飞塔加载内核时，使用gdb连接上去</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808111025101.png" alt="image-20230808111025101"  />
+</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808111046974.png" alt="image-20230808111046974"  />
+</p>
+<p>将断点打在刚刚那个<code>test eax eax</code>地址处，让程序跑起来：</p>
+<p>程序被断住后，将eax改为0，然后继续运行：</p>
+<pre tabindex="0"><code>(gdb) set $eax=0
+(gdb) c
+</code></pre><p>当飞塔出现*System is staring&hellip;*字符就证明内核验证成功了</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808111747241.png" alt="image-20230808111747241"  />
+</p>
+<p>使用之前的密码登录，登录后执行smartctl命令，启动刚刚我们的后门程序：</p>
+<pre tabindex="0"><code>diag hardware smartctl
+</code></pre><p>因为刚刚的后面程序会执行id命令和telnet命令，所以飞塔回显id命令，就证明后门程序执行了，我们在ubuntu上尝试使用telnet连接：</p>
+<p><img loading="lazy" src="/vuln/FortiGate_get_shell.assets/image-20230808113439596.png" alt="image-20230808113439596"  />
+</p>
+<p>这样就成功获取飞塔的shell</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
