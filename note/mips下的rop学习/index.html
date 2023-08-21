@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="" />
+<meta property="og:description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/" /><meta property="article:section" content="note" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "note",
+      "item": "https://jellyfish-pro.github.io/note/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "",
+      "item": "https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "",
+  "name": "",
+  "description": "关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。\n这里我们需要说明一些需要注意的地方：\n我们不仅需要点击MIPS ROP Finder\n还需要点击mips rop gadgets\n不然会报错，找不到stackfinder()函数\n计算偏移 //rop-test.c\r#include \u0026lt;stdio.h\u0026gt;\r#include \u0026lt;stdlib.h\u0026gt;\r#include \u0026lt;sys/stat.h\u0026gt;\r#include \u0026lt;string.h\u0026gt;\rvoid do_system(int code,char *cmd)\r{\rchar buf[255];\r//sleep(1);\rsystem(cmd);\r}\rint main()\r{\rchar buf[256]={0};\rchar ch;\rint count = 0;\runsigned int fileLen = 0;\rstruct stat fileData;\rFILE *fp;\rif(0 == stat(\u0026#34;passwd\u0026#34;,\u0026amp;fileData))\rfileLen = fileData.st_size;\relse\rreturn 1;\rif((fp = fopen(\u0026#34;passwd\u0026#34;,\u0026#34;rb\u0026#34;)) == NULL)\r{\rprintf(\u0026#34;Cannot open file passwd!",
+  "keywords": [
+    
+  ],
+  "articleBody": "关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。\n这里我们需要说明一些需要注意的地方：\n我们不仅需要点击MIPS ROP Finder\n还需要点击mips rop gadgets\n不然会报错，找不到stackfinder()函数\n计算偏移 //rop-test.c\r#include #include #include #include void do_system(int code,char *cmd)\r{\rchar buf[255];\r//sleep(1);\rsystem(cmd);\r}\rint main()\r{\rchar buf[256]={0};\rchar ch;\rint count = 0;\runsigned int fileLen = 0;\rstruct stat fileData;\rFILE *fp;\rif(0 == stat(\"passwd\",\u0026fileData))\rfileLen = fileData.st_size;\relse\rreturn 1;\rif((fp = fopen(\"passwd\",\"rb\")) == NULL)\r{\rprintf(\"Cannot open file passwd!n\");\rexit(1);\r}\r// 循环读取第一个字符放入buf\rch=fgetc(fp);\rwhile(count \u003c= fileLen)\r{\rbuf[count++] = ch;\rch = fgetc(fp);\r}\rbuf[--count] = 'x00';\rif(!strcmp(buf,\"adminpwd\"))\r{\rdo_system(count,\"ls -l\");\r}\relse\r{\rprintf(\"you have an invalid password!n\");\r}\rfclose(fp);\rreturn 0;\r} 这是我们测试的代码，主要功能是读取psswd文件里的内容，复制到buf中，然后和密码进行比较。\nmips-linux-gnu-gcc -static -fno-stack-protector rop_test.c -o mips-rop-test **注意：高版本gcc下编译，如果打开-static，那么就会强制打开栈保护。所以我是在ubuntu16.04上进行编译的。\n如果我们要进行调试的话，就需要用到gdb-multiarch。\n先开启远程调试接口：\n$ qemu-mips-static -g 1234 mips-rop-test 使用gdb-multiarch连接上去\n$ gdb-multiarch mips-rop-test\rpwndbg\u003e b main\rpwndbg\u003e target remote :1234 利用cyclic计算偏移：\ncyclic 700 \u003e passwd $ cyclic -l 0x62616165\r404 寻找rop 上面已经写了怎么安装mipsrop，这里我们就来用一下。\n同样，先点击MIPS ROP Finder和mips rop gadgets，然后使用mipsrop.stackfinder():\n这里就会把全部的显示出来，当然如果我们要寻找特定的汇编命令，也可以使用mipsrop.find('jr')。\n这里我们使用mipsrop.stackfinder()就可以找到想要的：\n双击地址，来到该rop处：\n.text:00447270 var_3C = -0x3C\r.text:00447270 var_s0 = 0\r······\r.text:0044728C addiu $a1, $sp, 0x54+var_3C\r.text:00447290 lw $ra, 0x54+var_s0($sp)\r.text:00447294 sltiu $v0, 1\r.text:00447298 jr $ra 这一条指令的大概流程为：\n将栈顶指针($sp)加上0x54+var_3c，放入$a1 将栈上偏移为0x54+var_s0的值放入$ra 跳转到$ra **注意：**这里我们是把参数传入的$a1，所以不能直接调用system函数，只能调用do_system函数。\n那么现在我们就知道，我们需要将system函数的地址放到0x54+var_s0处，\n故，我们需要构造的栈的结构如下：\n最后的效果为：\n",
+  "wordCount" : "186",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/note/">note</a></div>
+    <h1 class="post-title">
+      
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e5%85%b3%e4%ba%8emips%e4%b8%8b%e7%9a%84rop%e5%ad%a6%e4%b9%a0" aria-label="关于mips下的rop学习">关于mips下的rop学习</a><ul>
+                        
+                <li>
+                    <a href="#%e5%85%b3%e4%ba%8emips%e4%b8%adrop%e9%93%be%e7%9a%84%e6%9f%a5%e6%89%be" aria-label="关于mips中rop链的查找">关于mips中rop链的查找</a></li>
+                <li>
+                    <a href="#%e8%ae%a1%e7%ae%97%e5%81%8f%e7%a7%bb" aria-label="计算偏移">计算偏移</a></li>
+                <li>
+                    <a href="#%e5%af%bb%e6%89%berop" aria-label="寻找rop">寻找rop</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h3 id="关于mips下的rop学习">关于mips下的rop学习<a hidden class="anchor" aria-hidden="true" href="#关于mips下的rop学习">#</a></h3>
+<h4 id="关于mips中rop链的查找">关于mips中rop链的查找<a hidden class="anchor" aria-hidden="true" href="#关于mips中rop链的查找">#</a></h4>
+<p>与x86下寻找rop不同，<code>ROPgadget</code>对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，<a href="https://bbs.kanxue.com/thread-273522.htm">具体的方法</a>。</p>
+<p>这里我们需要说明一些需要注意的地方：</p>
+<p><strong>我们不仅需要点击<code>MIPS ROP Finder</code></strong></p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230817200750236.png" alt="image-20230817200750236"  />
+</p>
+<p><strong>还需要点击<code>mips rop gadgets</code></strong></p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230817200824121.png" alt="image-20230817200824121"  />
+</p>
+<p>不然会报错，找不到<code>stackfinder()</code>函数</p>
+<h4 id="计算偏移">计算偏移<a hidden class="anchor" aria-hidden="true" href="#计算偏移">#</a></h4>
+<pre tabindex="0"><code>//rop-test.c
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;string.h&gt;
+ 
+void do_system(int code,char *cmd)
+{
+    char buf[255];
+    //sleep(1);
+    system(cmd);
+}
+ 
+int main()
+{
+    char buf[256]={0};
+    char ch;
+    int count = 0;
+    unsigned int fileLen = 0;
+    struct stat fileData;
+    FILE *fp;
+ 
+    if(0 == stat(&#34;passwd&#34;,&amp;fileData))
+        fileLen = fileData.st_size;
+    else
+        return 1;
+ 
+    if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL)
+    {
+        printf(&#34;Cannot open file passwd!n&#34;);
+        exit(1);
+    }
+ 
+    // 循环读取第一个字符放入buf
+    ch=fgetc(fp);
+    while(count &lt;= fileLen)
+    {
+        buf[count++] = ch;
+        ch = fgetc(fp);
+    }
+    buf[--count] = &#39;x00&#39;;
+ 
+    if(!strcmp(buf,&#34;adminpwd&#34;))
+    {
+        do_system(count,&#34;ls -l&#34;);
+    }
+    else
+    {
+        printf(&#34;you have an invalid password!n&#34;);
+    }
+    fclose(fp);
+ 
+    return 0;
+}
+</code></pre><p>这是我们测试的代码，主要功能是读取<em>psswd</em>文件里的内容，复制到buf中，然后和密码进行比较。</p>
+<pre tabindex="0"><code>mips-linux-gnu-gcc -static -fno-stack-protector rop_test.c -o mips-rop-test
+</code></pre><p>**注意：<em><em>高版本gcc下编译，如果打开</em>-static</em>，那么就会强制打开栈保护。所以我是在ubuntu16.04上进行编译的。</p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230815221743675.png" alt="image-20230815221743675"  />
+</p>
+<p>如果我们要进行调试的话，就需要用到<em>gdb-multiarch</em>。</p>
+<p>先开启远程调试接口：</p>
+<pre tabindex="0"><code>$ qemu-mips-static -g 1234 mips-rop-test
+</code></pre><p>使用<em>gdb-multiarch</em>连接上去</p>
+<pre tabindex="0"><code>$ gdb-multiarch mips-rop-test
+pwndbg&gt; b main
+pwndbg&gt; target remote :1234
+</code></pre><p>利用cyclic计算偏移：</p>
+<pre tabindex="0"><code>cyclic 700 &gt; passwd
+</code></pre><pre tabindex="0"><code>$ cyclic -l 0x62616165
+404
+</code></pre><h4 id="寻找rop">寻找rop<a hidden class="anchor" aria-hidden="true" href="#寻找rop">#</a></h4>
+<p>上面已经写了怎么安装mipsrop，这里我们就来用一下。</p>
+<p>同样，先点击<code>MIPS ROP Finder</code>和<code>mips rop gadgets</code>，然后使用<code>mipsrop.stackfinder()</code>:</p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230817205034709.png" alt="image-20230817205034709"  />
+</p>
+<p>这里就会把全部的显示出来，当然如果我们要寻找特定的汇编命令，也可以使用<code>mipsrop.find('jr')</code>。</p>
+<p>这里我们使用<code>mipsrop.stackfinder()</code>就可以找到想要的：</p>
+<p>双击地址，来到该rop处：</p>
+<pre tabindex="0"><code>.text:00447270 var_3C          = -0x3C
+.text:00447270 var_s0          =  0
+
+······
+
+.text:0044728C                 addiu   $a1, $sp, 0x54+var_3C
+.text:00447290                 lw      $ra, 0x54+var_s0($sp)
+.text:00447294                 sltiu   $v0, 1
+.text:00447298                 jr      $ra
+</code></pre><p>这一条指令的大概流程为：</p>
+<ol>
+<li>将栈顶指针($sp)加上<em>0x54+var_3c</em>，放入$a1</li>
+<li>将栈上偏移为<em>0x54+var_s0</em>的值放入$ra</li>
+<li>跳转到$ra</li>
+</ol>
+<p>**注意：**这里我们是把参数传入的<code>$a1</code>，所以不能直接调用system函数，只能调用do_system函数。</p>
+<p>那么现在我们就知道，我们需要将system函数的地址放到<em>0x54+var_s0</em>处，</p>
+<p>故，我们需要构造的栈的结构如下：</p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230821213428002.png" alt="image-20230821213428002"  />
+</p>
+<p>最后的效果为：</p>
+<p><img loading="lazy" src="/note/mips_rop.assets/image-20230821213755837.png" alt="image-20230821213755837"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

