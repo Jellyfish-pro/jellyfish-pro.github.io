@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>CAI dog</title>
+<title>mips下的rop | CAI dog</title>
 <meta name="keywords" content="">
 <meta name="description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
 这里我们需要说明一些需要注意的地方：
@@ -61,7 +61,7 @@
         }
 
     </style>
-</noscript><meta property="og:title" content="" />
+</noscript><meta property="og:title" content="mips下的rop" />
 <meta property="og:description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
 这里我们需要说明一些需要注意的地方：
 我们不仅需要点击MIPS ROP Finder
@@ -74,7 +74,7 @@
 
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content=""/>
+<meta name="twitter:title" content="mips下的rop"/>
 <meta name="twitter:description" content="关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
 这里我们需要说明一些需要注意的地方：
 我们不仅需要点击MIPS ROP Finder
@@ -97,7 +97,7 @@
     {
       "@type": "ListItem",
       "position":  3 ,
-      "name": "",
+      "name": "mips下的rop",
       "item": "https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"
     }
   ]
@@ -107,8 +107,8 @@
 {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  "headline": "",
-  "name": "",
+  "headline": "mips下的rop",
+  "name": "mips下的rop",
   "description": "关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。\n这里我们需要说明一些需要注意的地方：\n我们不仅需要点击MIPS ROP Finder\n还需要点击mips rop gadgets\n不然会报错，找不到stackfinder()函数\n计算偏移 //rop-test.c\r#include \u0026lt;stdio.h\u0026gt;\r#include \u0026lt;stdlib.h\u0026gt;\r#include \u0026lt;sys/stat.h\u0026gt;\r#include \u0026lt;string.h\u0026gt;\rvoid do_system(int code,char *cmd)\r{\rchar buf[255];\r//sleep(1);\rsystem(cmd);\r}\rint main()\r{\rchar buf[256]={0};\rchar ch;\rint count = 0;\runsigned int fileLen = 0;\rstruct stat fileData;\rFILE *fp;\rif(0 == stat(\u0026#34;passwd\u0026#34;,\u0026amp;fileData))\rfileLen = fileData.st_size;\relse\rreturn 1;\rif((fp = fopen(\u0026#34;passwd\u0026#34;,\u0026#34;rb\u0026#34;)) == NULL)\r{\rprintf(\u0026#34;Cannot open file passwd!",
   "keywords": [
     
@@ -212,7 +212,7 @@
   <header class="post-header">
     <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/note/">note</a></div>
     <h1 class="post-title">
-      
+      mips下的rop
     </h1>
     <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
 

@@ -170,23 +170,6 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
-这里我们需要说明一些需要注意的地方：
-我们不仅需要点击MIPS ROP Finder
-还需要点击mips rop gadgets
-不然会报错，找不到stackfinder()函数
-计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!...</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to " href="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
     <h2>arm交叉编译
     </h2>
   </header>
@@ -231,6 +214,23 @@ Edit -&gt; Functions -&gt; Create function 或者按快捷键p
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to ida未识别到函数" href="https://jellyfish-pro.github.io/note/ida%E6%9C%AA%E8%AF%86%E5%88%AB%E5%88%B0%E5%87%BD%E6%95%B0/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>mips下的rop
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
+这里我们需要说明一些需要注意的地方：
+我们不仅需要点击MIPS ROP Finder
+还需要点击mips rop gadgets
+不然会报错，找不到stackfinder()函数
+计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!...</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to mips下的rop" href="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"></a>
 </article>
 
 <article class="post-entry"> 
