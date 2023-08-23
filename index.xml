@@ -34,6 +34,16 @@
     </item>
     
     <item>
+      <title>arm下的rop</title>
+      <link>https://jellyfish-pro.github.io/note/arm%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/arm%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/</guid>
+      <description>arm下的rop 这次我们采用了如下的练习代码
+#include &amp;lt;stdio.h&amp;gt;#include &amp;lt;string.h&amp;gt;#include &amp;lt;stdlib.h&amp;gt;#include &amp;lt;unistd.h&amp;gt;char str1[] = &amp;#34;uname -a&amp;#34;;char str2[] = &amp;#34;touch pwned.txt&amp;#34;;char str3[] = &amp;#34;ls -sail&amp;#34;;char str4[] = &amp;#34;/bin/sh&amp;#34;;void winner(){printf(&amp;#34;Nothing interesting here...n&amp;#34;);system(&amp;#34;# this does nothing...&amp;#34;);exit(0);}void gadget(){__asm__(&amp;#34;pop {r0,pc}&amp;#34;);}int main(){char buff[16];printf(&amp;#34;Welcome to ROPLevel2 created by Billy Ellis (@bellis1000)n&amp;#34;);printf(&amp;#34;The objective of this level is to execute a shell command of your choice by using a ROP gadget followed by jumping to system()n&amp;#34;);printf(&amp;#34;Good luck: &amp;#34;);scanf(&amp;#34;%s&amp;#34;,buff);printf(&amp;#34;Nice try ;)n&amp;#34;);return 0;} arm-linux-gnueabi-gcc -fno-stack-protector arm-rop.</description>
+    </item>
+    
+    <item>
       <title>arm交叉编译</title>
       <link>https://jellyfish-pro.github.io/note/arm%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -158,6 +158,28 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>rinetd端口转发
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>rinetd是一个在linux上的端口转发工具。
+安装方式 在github上搜索rinetd就可以找到官方仓库
+安装命令在README里也有写：
+./bootstrap./configure –prefix=/home/shangdi4sb/rinetd #home目录下makemake install 需要注意的是 configure时填写安装目录，我个人是习惯安装在home目录下
+配置文件 配置文件的位置为：&lt;安装目录&gt;/etc/rinetd.conf
+我们直接打开文件，按照如下格式写入内容就可以了，不需要理会配置文件原有的内容：
+bindadress bindport connectaddress connectport监听的ip 监听ip的端口 转发的ip 转发ip的端口 例如我想把本地8080端口的数据转发到qemu(192.168.113.129)的80端口上
+0.0.0.0 8080 192.168.113.129 80 启动rinetd rinetd的二进制文件存默认放在：&lt;安装目录&gt;/etc/rinetd.conf
+使用如下命令：
+./sbin/rinetd -f -c ./etc/rinetd.conf -f 不使用后台模式，一般使用这个参数是为了看报错
+-c 指定配置文件</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to rinetd端口转发" href="https://jellyfish-pro.github.io/note/rinetd%E7%AB%AF%E5%8F%A3%E8%BD%AC%E5%8F%91/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>shell
     </h2>
   </header>
