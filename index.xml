@@ -336,6 +336,28 @@ from pwn import *context.log_level = &amp;#39;debug&amp;#39;canary = b&amp;#34
     </item>
     
     <item>
+      <title>firmware-analysis-toolkit安装记录</title>
+      <link>https://jellyfish-pro.github.io/note/firmware-analysis-toolkit%E5%AE%89%E8%A3%85%E8%AE%B0%E5%BD%95/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/firmware-analysis-toolkit%E5%AE%89%E8%A3%85%E8%AE%B0%E5%BD%95/</guid>
+      <description>firmware-analysis-toolkit安装记录 firmware-analysis-toolkit是一个集成了binwalk、firmadyne、qemu为一体的工具，也就是这个工具包含了固件解压、固件模拟一系列的操作。
+但需要注意的是，近几年随着固件加密和iot设备复杂性的提升，所以对固件的解压和模拟并不能通过一个工具来自动化实现，其中需要我们来手动进行一些操作。
+安装前准备 安装过binwalk工具的朋友都知道，在ubuntu20或ubuntu22上，binwalk的一些插件是无法正常安装的。故这里我们选择的是在ubuntu18安装这个工具。
+并且提前给git设置了全局代理：
+git config --global https.proxy http://192.168.113.1:7890git config --global https.proxy https://192.168.113.1:7890 还有pip全局换源：
+echo &amp;#34;[global]&amp;#34; &amp;gt; ~/.pip/pip.confecho &amp;#34;index-url = https://mirrors.ustc.edu.cn/pypi/web/simple&amp;#34; &amp;gt;&amp;gt; ~/.pip/pip.conf 随后将firmware-analysis-toolkit 克隆到本地：
+git clone https://github.com/attify/firmware-analysis-toolkit.git 克隆完成后直接执行./setup.sh，就可以安装
+安装binwalk 虽然有脚本可以直接安装，但是会有各种各样的问题。
+前置依赖问题 在安装binwalk时我就遇到了一个问题
+我们直接搜索 Can&#39;t rollback pillow, nothing uninstalled.就可以看到需要安装前置依赖：
+sudo apt-get install python-dev python3-dev libxml2-dev libxslt1-dev zlib1g-dev libsasl2-dev libldap2-dev build-essential libssl-dev libffi-dev libmysqlclient-dev libjpeg-dev libpq-dev libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev git clone 失败 在安装binwalk时，会安装很多插件，这些插件可能需要去github进行克隆，但执行脚本时，特别容易克隆失败（但如果将克隆命令单独拿出来执行，则不会失败，不是很能理解为什么会出现这种情况）
+这时候我们就需要观察binwalk的安装脚本，以sasquatch为例，这里是先克隆，再执行命令，再删除。
+所以这里我先把sasquatch手动克隆到/tmp下，然后再把克隆和删除命令给注释掉。
+安装ubi_reader binwalk会有一个名叫ubi_reader的插件，这个插件如果安装binwalk安装脚本来执行的话，是无法安装成功的。可能是因为两边版本没有同步，在ubi_reader的仓库中已经没有setuo.</description>
+    </item>
+    
+    <item>
       <title>format0</title>
       <link>https://jellyfish-pro.github.io/ctf/format0/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -566,6 +588,21 @@ patch后：
 同时，删除原来bin目录下的sh文件，替换为软连接指向busybox
 rm -rf ./bin/shsudo ln -s /bin/busybox sh 接着我们写一个后门文件：
 #include &amp;lt;stdio.h&amp;gt;void shell(){system(&amp;#34;/bin/busybox id&amp;#34;, 0, 0);system(&amp;#34;/bin/busybox killall sshd &amp;amp;&amp;amp; /bin/busybox telnetd -l /bin/sh -b 0.</description>
+    </item>
+    
+    <item>
+      <title>git连接远程仓库并添加密钥</title>
+      <link>https://jellyfish-pro.github.io/note/git%E8%BF%9E%E6%8E%A5%E8%BF%9C%E7%A8%8B%E4%BB%93%E5%BA%93%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%AF%86%E9%92%A5/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/git%E8%BF%9E%E6%8E%A5%E8%BF%9C%E7%A8%8B%E4%BB%93%E5%BA%93%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%AF%86%E9%92%A5/</guid>
+      <description>git连接远程仓库并添加密钥 首先先初始化本地仓库
+git init 然后设置用户名和邮箱：
+git config --global user.name &amp;#39;user_name&amp;#39;git config --global user.email &amp;#39;xxx@qq.com&amp;#39; 这时再生成密钥：
+ssh-keygen -t rsa -C &amp;#39;xxx@qq.com&amp;#39; 将id_rsa.pub放到github
+然后连接远程仓库
+git remote add origin https://github.com/xxxxx.git git设置代理
+git config --global https.proxy http://127.0.0.1:1080git config --global https.proxy https://127.0.0.1:1080git config --global --unset http.proxygit config --global --unset https.proxy </description>
     </item>
     
     <item>

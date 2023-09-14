@@ -158,6 +158,40 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>qemu-system桥接设置
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>设置桥接的命令：
+sudo ifconfig ens33 down # 先停用host的网卡sudo brctl addbr br0 # 添加名为br0的网桥sudo brctl addif br0 ens33 # 将host的网卡插到网桥br0上sudo brctl stp br0 off # 如果只有一个网桥，则关闭生成树协议sudo ifconfig br0 0.0.0.0 promisc up # 启用br0网桥，不分配ip，混杂模式sudo ifconfig ens33 0.0.0.0 promisc up # 启用host网卡，不分配ip，混杂模式sudo dhclient br0 # 让网桥从dhcp获取ipsudo tunctl -t tap0 # 创建一个tap网络设备，名字为tap0sudo brctl addif br0 tap0 # 将tap0插到网桥sudo ifconfig tap0 0.0.0.0 promisc up # 启用tap0，不分配ip，混杂模式 启动qemu-system的命令：...</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to qemu-system桥接设置" href="https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>qemu编译
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在ubuntu上直接使用 sudo apt install qemu安装qemu时，会遇到因为qemu版本过低导致模拟环境出现问题（例如：二进制文件是32位，但是在模拟出的环境中二进制文件的地址是8字节的情况）
+为了避免这种情况，我们需要放弃apt安装，转而选择自行编译高版本的qemu。
+我们可以在git的官网上下载最新版本的源码，或者在[仓库](Index of / (qemu.org))中寻找之前的版本，亦或者是在[官方的gitlab](QEMU / QEMU · GitLab)上寻找想要的版本
+当我们拿到源码后，先安装依赖
+sudo apt build-dep qemu 而后进入qemu源码文件夹进行配置：
+./configure \--prefix= ~/qemu-user-static \ #这个选项是指定安装位置，我是直接安装到home目录下--static \ #指示静态链接--disable-system \ #不编译系统仿真程序--enable-linux-user #编译所有架构的用户态仿真程序 注意：
+静态编译的时候需要指定–disable-system选项，因为带softmmu 后缀的编译目标（即系统仿真程序）无论如何都会用到一些共享库，因此如果在指定了–static选项但没有指定–disable-system选项会导致后面的链接阶段报错。
+编译，安装：
+makemake install 最后给所有编译得到的目标重命名，为其添加一个&#34;-static&#34;后缀，这样qemu-debootstrap可以识别：
+cd qemu-user-static/binfor i in *; do cp $i $i-static; done </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to qemu编译" href="https://jellyfish-pro.github.io/note/qemu%E7%BC%96%E8%AF%91/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>rinetd端口转发
     </h2>
   </header>
