@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>qemu-system模拟dlink-dir867 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次
+记录更侧重对dlink的操作。
+至于模拟成功没有，只能说成功了但是没有完全成功（如成
+参考文章：
+Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)
+固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：
+而在参考文章中有提到：
+At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.
+A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.
+如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：
+0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)
+python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~
+文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：
+随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="qemu-system模拟dlink-dir867" />
+<meta property="og:description" content="qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次
+记录更侧重对dlink的操作。
+至于模拟成功没有，只能说成功了但是没有完全成功（如成
+参考文章：
+Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)
+固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：
+而在参考文章中有提到：
+At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.
+A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.
+如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：
+0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)
+python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~
+文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：
+随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/" /><meta property="article:section" content="note" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="qemu-system模拟dlink-dir867"/>
+<meta name="twitter:description" content="qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次
+记录更侧重对dlink的操作。
+至于模拟成功没有，只能说成功了但是没有完全成功（如成
+参考文章：
+Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)
+固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：
+而在参考文章中有提到：
+At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.
+A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.
+如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：
+0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)
+python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~
+文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：
+随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令："/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "note",
+      "item": "https://jellyfish-pro.github.io/note/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "qemu-system模拟dlink-dir867",
+      "item": "https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "qemu-system模拟dlink-dir867",
+  "name": "qemu-system模拟dlink-dir867",
+  "description": "qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次\n记录更侧重对dlink的操作。\n至于模拟成功没有，只能说成功了但是没有完全成功（如成\n参考文章：\nDebugging D-Link: Emulating firmware and hacking hardware (greynoise.io)\n固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：\n而在参考文章中有提到：\nAt the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.\nA quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.\n如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：\n0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)\npython3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~\n文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：\n随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：",
+  "keywords": [
+    
+  ],
+  "articleBody": "qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次\n记录更侧重对dlink的操作。\n至于模拟成功没有，只能说成功了但是没有完全成功（如成\n参考文章：\nDebugging D-Link: Emulating firmware and hacking hardware (greynoise.io)\n固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：\n而在参考文章中有提到：\nAt the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.\nA quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.\n如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：\n0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)\npython3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~\n文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：\n随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：\nlighttpd -f /etc_ro/lighttpd/lighttpd.conf -m /etc_ro/lighttpd/lib 随后我们在qemu-system里执行这个命令就好了\n固件模拟 在参考文章中使用的是chroot+qemu-user的方式，但是我更习惯qemu-system的方式\n使用qemu-system启动的命令参数、网络配置在这篇笔记上：\nCVE-2022-46641 D-Link dir-846命令注入漏洞 | CAI dog (jellyfish-pro.github.io)\nqemu-system桥接设置 | CAI dog (jellyfish-pro.github.io)\n这里我们先试着启动一下：\n# makedevlinks.sh\r# lighttpd -f /etc_ro/lighttpd/lighttpd.conf -m /etc_ro/lighttpd/lib -D 这里会报错缺少几个文件和文件夹，创建就好了。\n开启ssl服务 接着我们会遇到如下报错：\n2023-09-27 06:53:40: (network.c.747) SSL: Private key does not match the certificate public key, reason: error:02001002:system library:fopen:No such file or directory /var/private/lighttpd.pem\n通过报错描述，我们可以知道这是ssl报错说私钥和公钥不匹配，后面又说，缺少***/var/private/lighttpd.pem***这个文件\n就算我们去创建了这个文件，也会报错。在参考文章里写道：\n(network.c.747) SSL: Private key does not match the certificate public key, reason: error:02001002:system library:fopen:No such file or directory /var/private/lighttpd.pem\nBy simply commenting out the SSL related lines in /etc_ro/lighttpd/lighttpd.conf config file, we can just run the web service in HTTP mode exclusively and bypass the error.\n参考文件的方法是将lighttpd的配置文件中有关ssl的配置给注释掉，只使用http访问。\n但是考虑到，dlink可能会有将http代理到https中的情况，所以这里我尝试了启动这个功能。\n首先我们需要知道这个***/var/private/lighttpd.pem是怎么生成的，我在lighttpd的这个二进制文件中并没有搜到lighttpd.pem字符串，这里我就直接去cpio-root*文件夹中搜索哪个文件使用到了这个字符串：\n可以看到第一个是lighttpd的配置文件。\n第二个则是一个二进制文件，放入ida中，就可以搜索到lighttpd.pem字符串\n# cp /private/server.req /var/private/lighttpd.pem -rf\r# cat /var/private/server.key \u003e\u003e /var/private/lighttpd.pem 这里就可以看到，lighttpd.pem其实是由两个部分得到的：/private/server.req（公钥）和/var/private/server.key（私钥）\n通过这两个文件往上追朔，就会发现，其实这两个文件都来自于***/private/server.key.private***\n/private/server.req（公钥）： # openssl req -x509 -key /private/server.key.private -out /private/server.req -passin pass:QaZWsX741852 -subj \"/C=TW/ST=Taiwan/L=Taipei/O=D-Link Corporation/OU=D-Link WRPD/CN=General Root CA/emailAddress=webmaster@localhost\" -days 7300 /var/private/server.key（私钥）： # openssl rsa -in /private/server.key.private -out /var/private/server.key -passin pass:QaZWsX741852 而这个***/private/server.key.private又来自于/var/private/.randRootCA：***\n# openssl genrsa -rand /var/private/.randRootCA -out /private/server.key.private -des3 -passout pass:QaZWsX741852 2048 而这个***/var/private/.randRootCA***则来自如下命令：\n# openssl rand -out /var/private/.randRootCA 8192 需要注意的是，在qemu-system中，可能会因为权限问题，无法执行上面的命令，所以这些命令我是放在Ubuntu中执行，再将lighttpd.pem放进qemu的。\n修改端口 将lighttpd.pem放入***/var/private***下后，刚刚SSL的报错就没有，但是还有一个报错：\n这里报错，端口已经被占用了，这个报错我们直接修改端口就好了：\n# vi /etc_ro/lighttpd/lighttpd.conf 这里改成了8080端口\n启动服务 上面的问题解决之后，启动lighttpd服务，就会看到服务已启动了：\n这时我们也可以qemu的ip，就可以看到连接到了，但是浏览器也没有显示：\n（如启）\n这里我先将模拟的文章上传，至于分析固件解密的文章，我会尽快研究出来\n",
+  "wordCount" : "251",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/note/">note</a></div>
+    <h1 class="post-title">
+      qemu-system模拟dlink-dir867
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#qemu-system%e6%a8%a1%e6%8b%9fdlink-dir867" aria-label="qemu-system模拟dlink-dir867">qemu-system模拟dlink-dir867</a><ul>
+                        <ul>
+                        
+                <li>
+                    <a href="#%e5%86%99%e5%9c%a8%e5%89%8d%e9%9d%a2" aria-label="写在前面">写在前面</a></li></ul>
+                    
+                <li>
+                    <a href="#%e5%9b%ba%e4%bb%b6%e8%a7%a3%e5%af%86" aria-label="固件解密">固件解密</a></li>
+                <li>
+                    <a href="#%e6%96%87%e4%bb%b6%e7%b3%bb%e7%bb%9f%e5%88%86%e6%9e%90" aria-label="文件系统分析">文件系统分析</a></li>
+                <li>
+                    <a href="#%e5%9b%ba%e4%bb%b6%e6%a8%a1%e6%8b%9f" aria-label="固件模拟">固件模拟</a><ul>
+                        
+                <li>
+                    <a href="#%e5%bc%80%e5%90%afssl%e6%9c%8d%e5%8a%a1" aria-label="开启ssl服务">开启ssl服务</a></li>
+                <li>
+                    <a href="#%e4%bf%ae%e6%94%b9%e7%ab%af%e5%8f%a3" aria-label="修改端口">修改端口</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%90%af%e5%8a%a8%e6%9c%8d%e5%8a%a1" aria-label="启动服务">启动服务</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="qemu-system模拟dlink-dir867">qemu-system模拟dlink-dir867<a hidden class="anchor" aria-hidden="true" href="#qemu-system模拟dlink-dir867">#</a></h2>
+<h4 id="写在前面">写在前面<a hidden class="anchor" aria-hidden="true" href="#写在前面">#</a></h4>
+<p>之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次</p>
+<p>记录更侧重对dlink的操作。</p>
+<p>至于模拟成功没有，只能说成功了但是没有完全成功（<del><strong>如成</strong></del></p>
+<p>参考文章：</p>
+<p><a href="https://www.greynoise.io/blog/debugging-d-link-emulating-firmware-and-hacking-hardware">Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)</a></p>
+<h3 id="固件解密">固件解密<a hidden class="anchor" aria-hidden="true" href="#固件解密">#</a></h3>
+<p>这次我想要模拟的是DIR-867-US（美版），固件版本为：<img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927113614027.png" alt="image-20230927113614027"  />
+</p>
+<p>如果直接binwalk解压，是解压不了的：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927121118950.png" alt="image-20230927121118950"  />
+</p>
+<p>而在参考文章中有提到：</p>
+<blockquote>
+<p>At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.</p>
+<p>A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.</p>
+</blockquote>
+<p>如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：</p>
+<p><a href="https://github.com/0xricksanchez/dlink-decrypt/tree/master">0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)</a></p>
+<pre tabindex="0"><code>python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin
+</code></pre><p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927135222731.png" alt="image-20230927135222731"  />
+</p>
+<p>对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~</p>
+<h3 id="文件系统分析">文件系统分析<a hidden class="anchor" aria-hidden="true" href="#文件系统分析">#</a></h3>
+<p>解压后可以得到一个名叫<em><strong>cpio-root</strong></em>的文件夹，首先我们还是去看看<em><strong>inittab</strong></em>：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927141759542.png" alt="image-20230927141759542"  />
+</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927142723862.png" alt="image-20230927142723862"  />
+</p>
+<p>随后我们查看这两个文件，发现<em><strong>makedevlinks.sh</strong></em>的主要作用是建立一些*/dev<em>的管道，而</em><strong>init_system</strong><em>则是一个二进制文件，里面就包含</em><strong>lighttpd</strong>*的启动命令：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927143325361.png" alt="image-20230927143325361"  />
+</p>
+<pre tabindex="0"><code>lighttpd -f /etc_ro/lighttpd/lighttpd.conf -m /etc_ro/lighttpd/lib
+</code></pre><p>随后我们在qemu-system里执行这个命令就好了</p>
+<h3 id="固件模拟">固件模拟<a hidden class="anchor" aria-hidden="true" href="#固件模拟">#</a></h3>
+<p>在参考文章中使用的是<em><strong>chroot+qemu-user</strong></em>的方式，但是我更习惯<em><strong>qemu-system</strong></em>的方式</p>
+<p>使用<em>qemu-system</em>启动的命令参数、网络配置在这篇笔记上：</p>
+<p><a href="https://jellyfish-pro.github.io/posts/cve-2022-46641-d-link-dir-846%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">CVE-2022-46641 D-Link dir-846命令注入漏洞 | CAI dog (jellyfish-pro.github.io)</a></p>
+<p><a href="https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/">qemu-system桥接设置 | CAI dog (jellyfish-pro.github.io)</a></p>
+<p>这里我们先试着启动一下：</p>
+<pre tabindex="0"><code># makedevlinks.sh
+# lighttpd -f /etc_ro/lighttpd/lighttpd.conf -m /etc_ro/lighttpd/lib -D
+</code></pre><p>这里会报错缺少几个文件和文件夹，创建就好了。</p>
+<h4 id="开启ssl服务">开启ssl服务<a hidden class="anchor" aria-hidden="true" href="#开启ssl服务">#</a></h4>
+<p>接着我们会遇到如下报错：</p>
+<blockquote>
+<p>2023-09-27 06:53:40: (network.c.747) SSL: Private key does not match the certificate public key, reason: error:02001002:system library:fopen:No such file or directory /var/private/lighttpd.pem</p>
+</blockquote>
+<p>通过报错描述，我们可以知道这是ssl报错说私钥和公钥不匹配，后面又说，缺少***/var/private/lighttpd.pem***这个文件</p>
+<p>就算我们去创建了这个文件，也会报错。在参考文章里写道：</p>
+<blockquote>
+<p>(network.c.747) SSL: Private key does not match the certificate public key, reason: error:02001002:system library:fopen:No such file or directory /var/private/lighttpd.pem</p>
+<p>By simply commenting out the SSL related lines in /etc_ro/lighttpd/lighttpd.conf config file, we can just run the web service in HTTP mode exclusively and bypass the error.</p>
+</blockquote>
+<p>参考文件的方法是将<em>lighttpd</em>的配置文件中有关ssl的配置给注释掉，只使用<em>http</em>访问。</p>
+<p>但是考虑到，dlink可能会有将<em>http</em>代理到<em>https</em>中的情况，所以这里我尝试了启动这个功能。</p>
+<p>首先我们需要知道这个***/var/private/lighttpd.pem<em><em><em>是怎么生成的，我在</em>lighttpd</em>的这个二进制文件中并没有搜到</em>lighttpd.pem<em>字符串，这里我就直接去</em>cpio-root*文件夹中搜索哪个文件使用到了这个字符串：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927151739915.png" alt="image-20230927151739915"  />
+</p>
+<p>可以看到第一个是<em>lighttpd</em>的配置文件。</p>
+<p>第二个则是一个二进制文件，放入ida中，就可以搜索到<em>lighttpd.pem</em>字符串</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927152215465.png" alt="image-20230927152215465"  />
+</p>
+<pre tabindex="0"><code># cp /private/server.req /var/private/lighttpd.pem -rf
+# cat /var/private/server.key &gt;&gt; /var/private/lighttpd.pem
+</code></pre><p>这里就可以看到，<em><strong>lighttpd.pem</strong></em>其实是由两个部分得到的：<em><strong>/private/server.req（公钥）<em><strong>和</strong></em>/var/private/server.key（私钥）</strong></em></p>
+<p>通过这两个文件往上追朔，就会发现，其实这两个文件都来自于***/private/server.key.private***</p>
+<ul>
+<li><em><strong>/private/server.req（公钥）：</strong></em></li>
+</ul>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927153349157.png" alt="image-20230927153349157"  />
+</p>
+<pre tabindex="0"><code># openssl req -x509 -key /private/server.key.private -out /private/server.req -passin pass:QaZWsX741852 -subj &#34;/C=TW/ST=Taiwan/L=Taipei/O=D-Link Corporation/OU=D-Link WRPD/CN=General Root CA/emailAddress=webmaster@localhost&#34; -days 7300
+</code></pre><ul>
+<li><em><strong>/var/private/server.key（私钥）：</strong></em></li>
+</ul>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927153449349.png" alt="image-20230927153449349"  />
+</p>
+<pre tabindex="0"><code># openssl rsa -in /private/server.key.private -out /var/private/server.key -passin pass:QaZWsX741852
+</code></pre><p>而这个***/private/server.key.private<em><strong>又来自于</strong></em>/var/private/.randRootCA：***</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927153554257.png" alt="image-20230927153554257"  />
+</p>
+<pre tabindex="0"><code># openssl genrsa -rand /var/private/.randRootCA -out /private/server.key.private -des3 -passout pass:QaZWsX741852 2048
+</code></pre><p>而这个***/var/private/.randRootCA***则来自如下命令：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927153701604.png" alt="image-20230927153701604"  />
+</p>
+<pre tabindex="0"><code># openssl rand -out /var/private/.randRootCA 8192
+</code></pre><p>需要注意的是，在qemu-system中，可能会因为权限问题，无法执行上面的命令，所以这些命令我是放在Ubuntu中执行，再将<em><strong>lighttpd.pem</strong></em>放进qemu的。</p>
+<h4 id="修改端口">修改端口<a hidden class="anchor" aria-hidden="true" href="#修改端口">#</a></h4>
+<p>将<em><strong>lighttpd.pem</strong></em>放入***/var/private***下后，刚刚SSL的报错就没有，但是还有一个报错：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927155659067.png" alt="image-20230927155659067"  />
+</p>
+<p>这里报错，端口已经被占用了，这个报错我们直接修改端口就好了：</p>
+<pre tabindex="0"><code># vi /etc_ro/lighttpd/lighttpd.conf
+</code></pre><p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927155816399.png" alt="image-20230927155816399"  />
+</p>
+<p>这里改成了8080端口</p>
+<h3 id="启动服务">启动服务<a hidden class="anchor" aria-hidden="true" href="#启动服务">#</a></h3>
+<p>上面的问题解决之后，启动lighttpd服务，就会看到服务已启动了：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927155946518.png" alt="image-20230927155946518"  />
+</p>
+<p>这时我们也可以qemu的ip，就可以看到连接到了，但是浏览器也没有显示：</p>
+<p><img loading="lazy" src="/note/qemu-system-dlink-dir867.assets/image-20230927160240304.png" alt="image-20230927160240304"  />
+</p>
+<p><del>（如启）</del></p>
+<p>这里我先将模拟的文章上传，至于分析固件解密的文章，我会尽快研究出来</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

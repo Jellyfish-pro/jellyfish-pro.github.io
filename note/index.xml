@@ -162,6 +162,28 @@ sudo ifconfig ens33 down # 先停用host的网卡sudo brctl addbr br0 # 添加�
     </item>
     
     <item>
+      <title>qemu-system模拟dlink-dir867</title>
+      <link>https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/</guid>
+      <description>qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次
+记录更侧重对dlink的操作。
+至于模拟成功没有，只能说成功了但是没有完全成功（如成
+参考文章：
+Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)
+固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：
+而在参考文章中有提到：
+At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.
+A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.
+如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：
+0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)
+python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~
+文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：
+随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：</description>
+    </item>
+    
+    <item>
       <title>qemu编译</title>
       <link>https://jellyfish-pro.github.io/note/qemu%E7%BC%96%E8%AF%91/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
