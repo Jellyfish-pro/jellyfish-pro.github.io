@@ -158,6 +158,30 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>nfs共享文件夹命令
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在一些设备上，比如海康威视，使用的是阉割的busybox，没有wget、curl，甚至没有nc
+这时候可以选择使用nfs共享文件夹命令
+使用之前需要进行安装：
+sudo apt-get install nfs-kernel-server # 安装 NFS服务器端sudo apt-get install nfs-common # 安装 NFS客户端 随后打开服务：
+sudo /etc/init.d/nfs-kernel-server start 或者 sudo /etc/init.d/nfs-kernel-server restart 使用如下命令可以查看nfs服务状态：
+service nfs-server status 随后我们写配置文件：
+sudo vim /etc/exports 将下面内容复制到配置文件中
+/home/shangdi4sb/nfs *(rw,sync,no_root_squash,no_subtree_check) *代表了所有的网段都可以访问。
+rw代表了可读可写。
+这个我只使用nfs传递文件，故不对其他的几个参数做过多的解释。
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs 可以看到这个结构很简单，就不多解释了
+如果显示挂载失败可以尝试*-o*参数
+sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs -o nolcok </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to nfs共享文件夹命令" href="https://jellyfish-pro.github.io/note/nfs%E5%85%B1%E4%BA%AB%E6%96%87%E4%BB%B6%E5%A4%B9%E5%91%BD%E4%BB%A4/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>qemu-system桥接设置
     </h2>
   </header>

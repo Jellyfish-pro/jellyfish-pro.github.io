@@ -38,6 +38,46 @@ arm-linux-gnueabi-gcc arm_test.c -static -o test </description>
     </item>
     
     <item>
+      <title>dlink固件解密分析</title>
+      <link>https://jellyfish-pro.github.io/note/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/</guid>
+      <description>dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。
+这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。
+就用这次机会当敲门石，从dlink推广到更多的设备固件解密
+寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。
+不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt
+我们可以file看一下：
+可以看到这是一个mips的二进制文件，那么放入ida中查看一下：
+可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密
+当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：
+这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。
+我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img
+至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：
+grep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。
+解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：
+通过这个程序的流程，我们可以看到，这里处理了两个东西：
+key firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：
+这里有四个参数，他们的作用如下：
+这里我们需要注意的是第一个、第三个、第四个参数。
+第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0
+ciphertext = &amp;#39;C8D32F409CACB347C8D26FDCB9090B3C&amp;#39;key = &amp;#39;358790034519F8C8235DB6492839A73F&amp;#39;ivec = &amp;#39;98C9D8F0133D0695E2A709C8B69682D4&amp;#39; 这样我们就可以将固件的密钥给解密出来。
+对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件+长度+密钥的hash。
+其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。
+但是在看dec函数之前我们需要先了解一下dlink固件的结构：
+可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。
+了解了这个结构后，我们就可以看看二进制文件究竟干了什么：
+首先，要检查加密固件的magic字段。
+随后将密文部分+dec_img_len一起计算固件hash，并且和解密后固件的hash比较
+然后将密文+dec_img_len+密钥+ivec向量，进行解密固件
+随后再将解密后的固件+enc_img_len一起计算固件hash，并且和加密固件的hash进行比较
+最后再将解密后的固件+enc_img_len+密钥一起计算hash，并且和解密+长度+密钥的hash进行比较
+解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：
+#!/usr/bin/python3import pathlibimport sysfrom Crypto.Cipher import AESclass Dlink_dec:def __init__(self, inf, outf):self.</description>
+    </item>
+    
+    <item>
       <title>firmware-analysis-toolkit安装记录</title>
       <link>https://jellyfish-pro.github.io/note/firmware-analysis-toolkit%E5%AE%89%E8%A3%85%E8%AE%B0%E5%BD%95/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
