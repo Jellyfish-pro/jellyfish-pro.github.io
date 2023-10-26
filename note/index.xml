@@ -38,6 +38,30 @@ arm-linux-gnueabi-gcc arm_test.c -static -o test </description>
     </item>
     
     <item>
+      <title>dlink dir-878通过串口获取shell</title>
+      <link>https://jellyfish-pro.github.io/note/dlink-dir-878%E9%80%9A%E8%BF%87%E4%B8%B2%E5%8F%A3%E8%8E%B7%E5%8F%96shell/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/dlink-dir-878%E9%80%9A%E8%BF%87%E4%B8%B2%E5%8F%A3%E8%8E%B7%E5%8F%96shell/</guid>
+      <description>dlink dir-878通过串口获取shell 写在前面 焊针脚真的是一个体力活，不难，但是没有好的工具，实施起来就太麻烦了。
+文章只会介绍怎么找到GND和TX,然后通过排除法找到RX，而对于焊针脚不会详细描写。
+焊了针脚后其实也不能直接获得shell，还需要一些操作，这一部分会详细写。
+判断针脚 我的万用表的配置是这样的，因为我接触到iot设备的电流基本是3V，所以选择的是V而不是mV。
+然后黑线抵住wiki的卡扣，红线抵住针脚：
+通电后，挨个测试针脚，一般来说是0V的就是GND。
+然后重启路由器，测试剩下的三个针脚，如果有一个针脚在3V和1点几V左右来回跳动，那么说明这大概率是一个TX。
+那么剩下的VCC和RX，两个做排除法就好了。在实际dir-878中VCC是3V而RX是0.2V。
+获取shell 焊上针脚，找到GND和TX后我们就可以尝试连接串口了，dir-878的波特率为56000。
+进入串口，并且等待启动信息输出完毕，我们可以看到一个有着cmd&amp;gt;输入终端，这个终端可以输入任何字符，但是不会有回显：
+这里我们去搜索一下这个字符串：
+可以看到在如下的文件中出现可这个字符串，其实我们可以直接确定就在rc这个二进制文件中，因为这四个文件，只有rc和启动相关。
+通过cmd&amp;gt;我们可以直接找到交叉引用。通过这一段的逻辑，我们可以知道这里是在比较密码，而密码来自于console_pwd这个nvram环境变量。
+那我们直接搜索这个console_pwd这个字符串：
+这里找到一个类似的东西，我们可以去试一试这个dlink
+发现密码确实是这个东西</description>
+    </item>
+    
+    <item>
       <title>dlink固件解密分析</title>
       <link>https://jellyfish-pro.github.io/note/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -97,6 +121,25 @@ sudo apt-get install python-dev python3-dev libxml2-dev libxslt1-dev zlib1g-dev 
 这时候我们就需要观察binwalk的安装脚本，以sasquatch为例，这里是先克隆，再执行命令，再删除。
 所以这里我先把sasquatch手动克隆到/tmp下，然后再把克隆和删除命令给注释掉。
 安装ubi_reader binwalk会有一个名叫ubi_reader的插件，这个插件如果安装binwalk安装脚本来执行的话，是无法安装成功的。可能是因为两边版本没有同步，在ubi_reader的仓库中已经没有setuo.</description>
+    </item>
+    
+    <item>
+      <title>fuzz工具SaTC安装使用记录</title>
+      <link>https://jellyfish-pro.github.io/note/fuzz%E5%B7%A5%E5%85%B7satc%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/fuzz%E5%B7%A5%E5%85%B7satc%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8%E8%AE%B0%E5%BD%95/</guid>
+      <description>fuzz工具SaTC安装使用记录 写在前面 最近在研究一些fuzz工具的使用，看能不能找一些0day出来。幻想着靠fuzz工具走上人生巅峰（雾）
+了解了两款fuzz工具，一款boofuzz，不过在安装的时候出了一些问题，在通过小道消息询问解决方案的时候，了解到了SaTC这个工具，发现两个工具是互补的，所以就先试了试SaTC。
+又因为SaTC使用的是docker，而我挺久没用docker了，所以来做点记录
+title: SaTC安装记录 toc: true authors: [] tags: [] categories: [] series: [] SaTC安装记录 SaTC这个很方便的一点是有中文README。
+在README中提到了两个安装方法：
+建议通过使用Dockerfile来构建系统环境:
+# 进入SaTC代码目录cd SaTC # 构建Docker镜像docker build . -t satc# 进入Dokcer环境, 自行添加目录映射docker run -it satc 如果因为网络等原因无法构建，可使用我们提供等docker image
+# 从docker hun拉去imagedocker pull smile0304/satc:V1.0# 进入Dokcer环境, 自行添加目录映射docker run -it smile0304/satc:V1.0 第一个使用Dockerfile的方式，在我的环境上安装失败，但并没有提示具体是什么错误。
+第二个方式就会方便许多，直接执行docker拉取命令就可以下载到本地。
+不过在启动Docker时，需要自己指定目录映射（或者通过docker命令将固件中的文件系统放进去）
+docker run --name satc-netgear -v /home/shangdi4sb/device/netgear:/home/satc/netgear -it smile0304/satc:V1.0 &amp;ndash;name ：是我给这个容器取的名字，因为这次尝试挖掘网件，就取名netgear -v ：指定的映射目录，冒号前面是本地目录，后门是docker里的目录 进入docker后，就可以看到共享的文件夹和Satc的文件夹</description>
     </item>
     
     <item>
@@ -189,6 +232,26 @@ rw代表了可读可写。
 sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs 可以看到这个结构很简单，就不多解释了
 如果显示挂载失败可以尝试*-o*参数
 sudo mount -t nfs 192.168.113.128:/home/shangdi4sb/nfs ./nfs -o nolcok </description>
+    </item>
+    
+    <item>
+      <title>python3中的数据类型转换</title>
+      <link>https://jellyfish-pro.github.io/note/python3%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/note/python3%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/</guid>
+      <description>python3中的数据类型转换 写在前面
+之前在做ctf就涉及到泄露地址的情况，因为收到的一般是byte类型，但是如果要计算基地址的话就需要将byte转化为int类型。
+当时做转化就觉得很烦，随着后面接触的ctf的减少，就渐渐忘记了这件事。
+这次又遇到ctf，又在这个地方纠结了半天，所以这次做一个系统的总结。
+bytes转int 其实int主要分为两部分，一个是十进制，一个是十六进制。
+这里创建了一个6字节的bytes，来模拟接收到一个6字节的地址：
+byte = b&amp;#39;0x7f77bc08aef3&amp;#39; 接下来我们要对这个byte进行如下操作：
+将8个字节转为int类型，方便计算基地址 将int类型使用十六进制输出，来检查地址是否正确 最后使用p64()函数，进行包装，模拟发送回ctf 第一步 我们使用int()函数，但是需要注意该函数有两个参数，我们需要将base参数设置为16进制：
+addr = int(byte, base = 16)print(&amp;#34;byte_addr to int : %d&amp;#34;%addr) 第二步 因为addr已经变为int类型了，所以这里直接使用hex()就可以：
+hex_addr = hex(addr)print(&amp;#34;int_addr to hex : %s&amp;#34;%hex_addr) 第三步 这一步要使用p64()，但是我们要传入int类型。需要注意的是传入的是10进制，而不是16进制。
+p64_addr = p64(addr)print(b&amp;#34;p64() : &amp;#34; + p64_addr) 最后 看看效果：
+#!/usr/bin/python3from pwn import *byte = b&amp;#39;0x7f77bc08aef3&amp;#39;addr = int(byte, base = 16)print(&amp;#34;byte_addr to int : %d&amp;#34;%addr)hex_addr = hex(addr)print(&amp;#34;int_addr to hex : %s&amp;#34;%hex_addr)p64_addr = p64(addr)print(b&amp;#34;p64() : &amp;#34; + p64_addr) </description>
     </item>
     
     <item>
