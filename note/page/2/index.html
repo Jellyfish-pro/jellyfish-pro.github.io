@@ -158,41 +158,6 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>mips下的rop
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>关于mips下的rop学习 关于mips中rop链的查找 与x86下寻找rop不同，ROPgadget对于寻找mips的rop不太方便，所以这里我们就需要安装ida下的mipsfinder插件，具体的方法。
-这里我们需要说明一些需要注意的地方：
-我们不仅需要点击MIPS ROP Finder
-还需要点击mips rop gadgets
-不然会报错，找不到stackfinder()函数
-计算偏移 //rop-test.c#include &lt;stdio.h&gt;#include &lt;stdlib.h&gt;#include &lt;sys/stat.h&gt;#include &lt;string.h&gt;void do_system(int code,char *cmd){char buf[255];//sleep(1);system(cmd);}int main(){char buf[256]={0};char ch;int count = 0;unsigned int fileLen = 0;struct stat fileData;FILE *fp;if(0 == stat(&#34;passwd&#34;,&amp;fileData))fileLen = fileData.st_size;elsereturn 1;if((fp = fopen(&#34;passwd&#34;,&#34;rb&#34;)) == NULL){printf(&#34;Cannot open file passwd!...</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to mips下的rop" href="https://jellyfish-pro.github.io/note/mips%E4%B8%8B%E7%9A%84rop%E5%AD%A6%E4%B9%A0/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>mips交叉编译
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>mips中需要重点关注的几个寄存器 $a0-$a3进行传参 $sp为栈顶寄存器，$fp为栈底寄存器 $ra则存放返回地址 安装交叉连接工具 大段：
-sudo apt-get install linux-libc-dev-mips-crosssudo apt-get install libc6-mips-cross libc6-dev-mips-crosssudo apt-get install binutils-mips-linux-gnu gcc-mips-linux-gnusudo apt-get install g&#43;&#43;-mips-linux-gnu 小段：
-sudo apt-get install linux-libc-dev-mipsel-crosssudo apt-get install libc6-mipsel-cross libc6-dev-mipsel-crosssudo apt-get install binutils-mipsel-linux-gnu gcc-mipsel-linux-gnusudo apt-get install g&#43;&#43;-mipsel-linux-gnu 交叉编译 //mips_test.c#include &lt;stdio.h&gt;int main(void){print(&#34;hello world&#34;);return 0;} 接下来使用交叉编译工具编译
-mips-linux-gnu-gcc mips_test.c -o test 需要注意的是，这样直接编译出来的结果是动态链接，所以直接使用qemu用户模式，会报错。
-解决方法为使用qemu用户模式的-L参数，临时更换根目录：
-qemu-mips-static -L /usr/mips-linux-gnu/ test 或者是使用静态编译：
-mips-linux-gnu-gcc mips_test.c -static -o test </p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to mips交叉编译" href="https://jellyfish-pro.github.io/note/mips%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
     <h2>nfs共享文件夹命令
     </h2>
   </header>
@@ -249,31 +214,6 @@ sudo ifconfig ens33 down # 先停用host的网卡sudo brctl addbr br0 # 添加�
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to qemu-system桥接设置" href="https://jellyfish-pro.github.io/note/qemu-system%E6%A1%A5%E6%8E%A5%E8%AE%BE%E7%BD%AE/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>qemu-system模拟dlink-dir867
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>qemu-system模拟dlink-dir867 写在前面 之前也模拟过dlink的设备，不过当时更注重记录qemu的使用，而这次
-记录更侧重对dlink的操作。
-至于模拟成功没有，只能说成功了但是没有完全成功（如成
-参考文章：
-Debugging D-Link: Emulating firmware and hacking hardware (greynoise.io)
-固件解密 这次我想要模拟的是DIR-867-US（美版），固件版本为： 如果直接binwalk解压，是解压不了的：
-而在参考文章中有提到：
-At the start of the file is a 4-byte sequence that maps to the ASCII characters “SHRS”.
-A quick Google search for “SHRS firmware” turns up relevant results, indicating that we’re on the right track.
-如何是“SHRS”打头的四个字节，就可以使用下面的工具进行解压：
-0xricksanchez/dlink-decrypt: D-Link firmware decryption PoC (github.com)
-python3 dlink-dec.py -i DIR-867_FW1.30B07.bin -o DIR-867_FW1.30B07.dec.bin 对解密脚本的分析，会晚一点进行~~（应该，大概，可能，八成，会写在最后）~~
-文件系统分析 解压后可以得到一个名叫cpio-root的文件夹，首先我们还是去看看inittab：
-随后我们查看这两个文件，发现makedevlinks.sh的主要作用是建立一些*/dev的管道，而init_system则是一个二进制文件，里面就包含lighttpd*的启动命令：...</p>
-  </div>
-  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to qemu-system模拟dlink-dir867" href="https://jellyfish-pro.github.io/note/qemu-system%E6%A8%A1%E6%8B%9Fdlink-dir867/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -356,12 +296,55 @@ tcpdump tcp或者tcpdump icmp </p>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to tcpdump快速使用" href="https://jellyfish-pro.github.io/note/tcpdump%E5%BF%AB%E9%80%9F%E4%BD%BF%E7%94%A8/"></a>
 </article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ubuntu20 无setuptools下安装pip
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Ubuntu20及以上版本，虽会自带python2，但python2中不会自带pip和setuptools这两个模块。
+同时使用Ubuntu20及以上版已经将python-pip移除apt库。
+故，我们不能使用tar.gz安装pip和apt安装pip。
+这时我们可以去pipy下载对应python2的pip源码：
+wget https://bootstrap.pypa.io/pip/2.7/get-pip.py -O get-pip.pypython get-pip.py </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ubuntu20 无setuptools下安装pip" href="https://jellyfish-pro.github.io/note/ubuntu20-%E6%97%A0setuptools%E4%B8%8B%E5%AE%89%E8%A3%85pip/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>报错read-only file system解决方法
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>mount -o remount,rw / 使用mount命令重新挂载根目录，给一个可读可写的权限</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to 报错read-only file system解决方法" href="https://jellyfish-pro.github.io/note/%E6%8A%A5%E9%94%99read-only-file-system%E7%BB%93%E5%B1%80%E6%96%B9%E6%B3%95/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>设备无scp命令时将文件传出的方法
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先检查是否有wget或curl
+然后检查设备的busybox中是否有nc命令
+本地开启http服务，准备好对应架构的busybox，利用wget或curl获取busybox
+随后在本地打开nc准备接受：
+nc -l port &gt; your_file 在设备上使用命令：
+./busybox nc ip port &lt; your_file </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to 设备无scp命令时将文件传出的方法" href="https://jellyfish-pro.github.io/note/%E8%AE%BE%E5%A4%87%E6%97%A0scp%E5%91%BD%E4%BB%A4%E6%97%B6%E5%B0%86%E6%96%87%E4%BB%B6%E4%BC%A0%E5%87%BA%E7%9A%84%E6%96%B9%E6%B3%95/"></a>
+</article>
 <footer class="page-footer">
   <nav class="pagination">
     <a class="prev" href="https://jellyfish-pro.github.io/note/">
       «&nbsp;Prev&nbsp;
-    </a>
-    <a class="next" href="https://jellyfish-pro.github.io/note/page/3/">Next&nbsp;&nbsp;»
     </a>
   </nav>
 </footer>

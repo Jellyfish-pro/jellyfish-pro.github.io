@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>dlink固件解密分析 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。
+这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。
+就用这次机会当敲门石，从dlink推广到更多的设备固件解密
+寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。
+不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt
+我们可以file看一下：
+可以看到这是一个mips的二进制文件，那么放入ida中查看一下：
+可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密
+当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：
+这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。
+我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img
+至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：
+grep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。
+解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：
+通过这个程序的流程，我们可以看到，这里处理了两个东西：
+key firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：
+这里有四个参数，他们的作用如下：
+这里我们需要注意的是第一个、第三个、第四个参数。
+第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0
+ciphertext = &#39;C8D32F409CACB347C8D26FDCB9090B3C&#39;key = &#39;358790034519F8C8235DB6492839A73F&#39;ivec = &#39;98C9D8F0133D0695E2A709C8B69682D4&#39; 这样我们就可以将固件的密钥给解密出来。
+对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件&#43;长度&#43;密钥的hash。
+其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。
+但是在看dec函数之前我们需要先了解一下dlink固件的结构：
+可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。
+了解了这个结构后，我们就可以看看二进制文件究竟干了什么：
+首先，要检查加密固件的magic字段。
+随后将密文部分&#43;dec_img_len一起计算固件hash，并且和解密后固件的hash比较
+然后将密文&#43;dec_img_len&#43;密钥&#43;ivec向量，进行解密固件
+随后再将解密后的固件&#43;enc_img_len一起计算固件hash，并且和加密固件的hash进行比较
+最后再将解密后的固件&#43;enc_img_len&#43;密钥一起计算hash，并且和解密&#43;长度&#43;密钥的hash进行比较
+解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：
+#!/usr/bin/python3import pathlibimport sysfrom Crypto.Cipher import AESclass Dlink_dec:def __init__(self, inf, outf):self.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/posts/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="dlink固件解密分析" />
+<meta property="og:description" content="dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。
+这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。
+就用这次机会当敲门石，从dlink推广到更多的设备固件解密
+寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。
+不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt
+我们可以file看一下：
+可以看到这是一个mips的二进制文件，那么放入ida中查看一下：
+可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密
+当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：
+这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。
+我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img
+至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：
+grep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。
+解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：
+通过这个程序的流程，我们可以看到，这里处理了两个东西：
+key firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：
+这里有四个参数，他们的作用如下：
+这里我们需要注意的是第一个、第三个、第四个参数。
+第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0
+ciphertext = &#39;C8D32F409CACB347C8D26FDCB9090B3C&#39;key = &#39;358790034519F8C8235DB6492839A73F&#39;ivec = &#39;98C9D8F0133D0695E2A709C8B69682D4&#39; 这样我们就可以将固件的密钥给解密出来。
+对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件&#43;长度&#43;密钥的hash。
+其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。
+但是在看dec函数之前我们需要先了解一下dlink固件的结构：
+可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。
+了解了这个结构后，我们就可以看看二进制文件究竟干了什么：
+首先，要检查加密固件的magic字段。
+随后将密文部分&#43;dec_img_len一起计算固件hash，并且和解密后固件的hash比较
+然后将密文&#43;dec_img_len&#43;密钥&#43;ivec向量，进行解密固件
+随后再将解密后的固件&#43;enc_img_len一起计算固件hash，并且和加密固件的hash进行比较
+最后再将解密后的固件&#43;enc_img_len&#43;密钥一起计算hash，并且和解密&#43;长度&#43;密钥的hash进行比较
+解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：
+#!/usr/bin/python3import pathlibimport sysfrom Crypto.Cipher import AESclass Dlink_dec:def __init__(self, inf, outf):self." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/posts/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/" /><meta property="article:section" content="posts" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="dlink固件解密分析"/>
+<meta name="twitter:description" content="dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。
+这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。
+就用这次机会当敲门石，从dlink推广到更多的设备固件解密
+寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。
+不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt
+我们可以file看一下：
+可以看到这是一个mips的二进制文件，那么放入ida中查看一下：
+可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密
+当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：
+这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。
+我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img
+至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：
+grep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。
+解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：
+通过这个程序的流程，我们可以看到，这里处理了两个东西：
+key firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：
+这里有四个参数，他们的作用如下：
+这里我们需要注意的是第一个、第三个、第四个参数。
+第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0
+ciphertext = &#39;C8D32F409CACB347C8D26FDCB9090B3C&#39;key = &#39;358790034519F8C8235DB6492839A73F&#39;ivec = &#39;98C9D8F0133D0695E2A709C8B69682D4&#39; 这样我们就可以将固件的密钥给解密出来。
+对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件&#43;长度&#43;密钥的hash。
+其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。
+但是在看dec函数之前我们需要先了解一下dlink固件的结构：
+可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。
+了解了这个结构后，我们就可以看看二进制文件究竟干了什么：
+首先，要检查加密固件的magic字段。
+随后将密文部分&#43;dec_img_len一起计算固件hash，并且和解密后固件的hash比较
+然后将密文&#43;dec_img_len&#43;密钥&#43;ivec向量，进行解密固件
+随后再将解密后的固件&#43;enc_img_len一起计算固件hash，并且和加密固件的hash进行比较
+最后再将解密后的固件&#43;enc_img_len&#43;密钥一起计算hash，并且和解密&#43;长度&#43;密钥的hash进行比较
+解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：
+#!/usr/bin/python3import pathlibimport sysfrom Crypto.Cipher import AESclass Dlink_dec:def __init__(self, inf, outf):self."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "vuln",
+      "item": "https://jellyfish-pro.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "dlink固件解密分析",
+      "item": "https://jellyfish-pro.github.io/posts/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "dlink固件解密分析",
+  "name": "dlink固件解密分析",
+  "description": "dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。\n这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。\n就用这次机会当敲门石，从dlink推广到更多的设备固件解密\n寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。\n不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt\n我们可以file看一下：\n可以看到这是一个mips的二进制文件，那么放入ida中查看一下：\n可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密\n当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：\n这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。\n我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img\n至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：\ngrep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。\n解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：\n通过这个程序的流程，我们可以看到，这里处理了两个东西：\nkey firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：\n这里有四个参数，他们的作用如下：\n这里我们需要注意的是第一个、第三个、第四个参数。\n第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0\nciphertext = \u0026#39;C8D32F409CACB347C8D26FDCB9090B3C\u0026#39;\rkey = \u0026#39;358790034519F8C8235DB6492839A73F\u0026#39;\rivec = \u0026#39;98C9D8F0133D0695E2A709C8B69682D4\u0026#39; 这样我们就可以将固件的密钥给解密出来。\n对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件+长度+密钥的hash。\n其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。\n但是在看dec函数之前我们需要先了解一下dlink固件的结构：\n可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。\n了解了这个结构后，我们就可以看看二进制文件究竟干了什么：\n首先，要检查加密固件的magic字段。\n随后将密文部分+dec_img_len一起计算固件hash，并且和解密后固件的hash比较\n然后将密文+dec_img_len+密钥+ivec向量，进行解密固件\n随后再将解密后的固件+enc_img_len一起计算固件hash，并且和加密固件的hash进行比较\n最后再将解密后的固件+enc_img_len+密钥一起计算hash，并且和解密+长度+密钥的hash进行比较\n解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：\n#!/usr/bin/python3\rimport pathlib\rimport sys\rfrom Crypto.Cipher import AES\rclass Dlink_dec:\rdef __init__(self, inf, outf):\rself.",
+  "keywords": [
+    
+  ],
+  "articleBody": "dlink固件解密分析 写在前面 之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。\n这次正好有机会碰到需要模拟dlink867，需要解压固件，正好也有资料。\n就用这次机会当敲门石，从dlink推广到更多的设备固件解密\n寻找基本信息 一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。\n不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。/bin/imgdecrypt\n我们可以file看一下：\n可以看到这是一个mips的二进制文件，那么放入ida中查看一下：\n可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密\n当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：\n这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。\n我已经将命令注释在了上面。/bin/imgdecrypt /tmp/firmware.img\n至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：\ngrep -lire imgdecrypt 在这个prog-cgi中就可以找到启动命令。\n解密逻辑 上面我们了解到了一些基本的信息，现在我们来说dlink固件解密的流程：\n通过这个程序的流程，我们可以看到，这里处理了两个东西：\nkey firmware 对key的处理 我们先说说对key的处理，我们进入这个init_key的函数：\n这里有四个参数，他们的作用如下：\n这里我们需要注意的是第一个、第三个、第四个参数。\n第一个参数是密钥的密文，32个字节 第三个参数是密钥的密钥，16个字节 第四个参数是AES的ivec向量，16个字节 同时我们可以看到这三个参数全来自一个地方。off_4130A0\nciphertext = 'C8D32F409CACB347C8D26FDCB9090B3C'\rkey = '358790034519F8C8235DB6492839A73F'\rivec = '98C9D8F0133D0695E2A709C8B69682D4' 这样我们就可以将固件的密钥给解密出来。\n对固件的处理 这里我们进入了do_dec函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件+长度+密钥的hash。\n其实，如果我们只要求解密固件的话，我们只需要关注dec函数即可。\n但是在看dec函数之前我们需要先了解一下dlink固件的结构：\n可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、ivec向量和hash值。\n了解了这个结构后，我们就可以看看二进制文件究竟干了什么：\n首先，要检查加密固件的magic字段。\n随后将密文部分+dec_img_len一起计算固件hash，并且和解密后固件的hash比较\n然后将密文+dec_img_len+密钥+ivec向量，进行解密固件\n随后再将解密后的固件+enc_img_len一起计算固件hash，并且和加密固件的hash进行比较\n最后再将解密后的固件+enc_img_len+密钥一起计算hash，并且和解密+长度+密钥的hash进行比较\n解密脚本 现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：\n#!/usr/bin/python3\rimport pathlib\rimport sys\rfrom Crypto.Cipher import AES\rclass Dlink_dec:\rdef __init__(self, inf, outf):\rself.inf = pathlib.Path(inf)\rself.outf = outf\rself.dec_key = None\rself.fw_text = None\rself.ciphertext_offset = 0x6DC\rself.ivec_offset = 0xc\rself.ivec_len = 0x10\rself.ivec = None\rself.ciphertext_len_offset = 0x8\rself.ciphertext_len_offset_len = 0x4\rself.ciphertext_len = None\rself.init_key()\rself.get_ivec(self.inf)\rself.get_ciphertext_len(self.inf)\rself.get_fw_text(self.inf)\rdef check_SHRS(self, file :pathlib.Path):\rmagic_bytes = file.open('rb').read(4)\rif b\"SHRS\" == magic_bytes:\rreturn True\relse:\rprint(\"The Magic Bytes Check False!\")\rreturn False\rdef init_key(self):\rciphertext = bytes.fromhex('C8D32F409CACB347C8D26FDCB9090B3C')\rkey = bytes.fromhex('358790034519F8C8235DB6492839A73F')\rivec = bytes.fromhex('98C9D8F0133D0695E2A709C8B69682D4')\rself.dec_key = AES.new(key, AES.MODE_CBC, ivec).decrypt(ciphertext)\rprint(\"The key of ciphertext is {}\".format(self.dec_key))\rdef get_fw_text(self, file: pathlib.Path):\rwith open(file, \"rb\") as fw:\rfw.seek(self.ciphertext_offset)\rself.fw_text = fw.read(self.ciphertext_len)\rdef get_ivec(self, file: pathlib.Path):\rwith open(file, \"rb\") as fw:\rfw.seek(self.ivec_offset)\rself.ivec = fw.read(self.ivec_len)\rdef get_ciphertext_len(self, file: pathlib.Path):\rwith open(file, \"rb\") as fw:\rfw.seek(self.ciphertext_len_offset)\rself.ciphertext_len = int.from_bytes(fw.read(self.ciphertext_len_offset_len), byteorder='big', signed=False)\rdef decrypt_fw(self):\rdec_dlink = AES.new(self.dec_key, AES.MODE_CBC, self.ivec)\rfw = dec_dlink.decrypt(self.fw_text)\rpathlib.Path(self.outf).open(\"wb\").write(fw)\rdef run(self):\rif(self.check_SHRS(self.inf)):\rself.decrypt_fw()\rreturn True\relse:\rreturn False\rdef ex(*pri):\rfor i in pri:\rprint(i)\rexit(0) def main():\rtry:\rin_file = sys.argv[1]\rout_file = sys.argv[2]\rexcept:\rprint(\"USEG:\")\rprint(\" python3 {} in_file out_file\".format(sys.argv[0]))\rexit(0)\rdecrypt = Dlink_dec(in_file, out_file)\rif(decrypt.run()):\rprint(\"Dlink_fw decrypte Success!!!\") else:\rprint(\"Decrypte False!!\")\rif __name__ == '__main__' :\rmain() 这里我直接将我写的py给放了出来，当然虽然py是我自己写的，但是有很多地方都和资料类似。并且因为最初目的是自己使用，所以就没有写计算和比较hash的部分。\n",
+  "wordCount" : "255",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/posts/dlink%E5%9B%BA%E4%BB%B6%E8%A7%A3%E5%AF%86%E5%88%86%E6%9E%90/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/posts/">vuln</a></div>
+    <h1 class="post-title">
+      dlink固件解密分析
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#dlink%e5%9b%ba%e4%bb%b6%e8%a7%a3%e5%af%86%e5%88%86%e6%9e%90" aria-label="dlink固件解密分析">dlink固件解密分析</a><ul>
+                        <ul>
+                        
+                <li>
+                    <a href="#%e5%86%99%e5%9c%a8%e5%89%8d%e9%9d%a2" aria-label="写在前面">写在前面</a></li></ul>
+                    
+                <li>
+                    <a href="#%e5%af%bb%e6%89%be%e5%9f%ba%e6%9c%ac%e4%bf%a1%e6%81%af" aria-label="寻找基本信息">寻找基本信息</a></li>
+                <li>
+                    <a href="#%e8%a7%a3%e5%af%86%e9%80%bb%e8%be%91" aria-label="解密逻辑">解密逻辑</a><ul>
+                        
+                <li>
+                    <a href="#%e5%af%b9key%e7%9a%84%e5%a4%84%e7%90%86" aria-label="对key的处理">对key的处理</a></li>
+                <li>
+                    <a href="#%e5%af%b9%e5%9b%ba%e4%bb%b6%e7%9a%84%e5%a4%84%e7%90%86" aria-label="对固件的处理">对固件的处理</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e8%a7%a3%e5%af%86%e8%84%9a%e6%9c%ac" aria-label="解密脚本">解密脚本</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="dlink固件解密分析">dlink固件解密分析<a hidden class="anchor" aria-hidden="true" href="#dlink固件解密分析">#</a></h2>
+<h4 id="写在前面">写在前面<a hidden class="anchor" aria-hidden="true" href="#写在前面">#</a></h4>
+<p>之前解压固件基本都是用的工具，碰到加密的就只能上设备去提取。</p>
+<p>这次正好有机会碰到需要模拟<em>dlink867</em>，需要解压固件，正好也有<a href="https://github.com/0xricksanchez/dlink-decrypt/tree/master">资料</a>。</p>
+<p>就用这次机会当敲门石，从dlink推广到更多的设备固件解密</p>
+<h3 id="寻找基本信息">寻找基本信息<a hidden class="anchor" aria-hidden="true" href="#寻找基本信息">#</a></h3>
+<p>一般来说，当我们要更新固件，会先通过网页上传固件。所以我们可以通过上传固件所访问的文件、数据去寻找解密的二进制文件。</p>
+<p>不过这里因为我手上没有dlink867设备，所以就直接使用了资料中说的二进制文件。<code>/bin/imgdecrypt</code></p>
+<p>我们可以<code>file</code>看一下：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009142447193.png" alt="image-20231009142447193"  />
+</p>
+<p>可以看到这是一个mips的二进制文件，那么放入ida中查看一下：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009142813071.png" alt="image-20231009142813071"  />
+</p>
+<p>可以看到这个二进制文件的main函数十分的清楚，就是分为加密和解密</p>
+<p>当然我们关注的是解密函数，那么我们进入解密函数查看一下，同时我们也要注意传入解密函数的参数：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009143442515.png" alt="image-20231009143442515"  />
+</p>
+<p>这里可以看到这个函数的大致流程，同时这里我们可以看到程序会判断运行时传入的参数个数。</p>
+<p>我已经将命令注释在了上面。<code>/bin/imgdecrypt /tmp/firmware.img</code></p>
+<p>至于怎么寻找这个命令怎么找到的，我们可以使用以下的命令：</p>
+<pre tabindex="0"><code>grep -lire imgdecrypt
+</code></pre><p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009162417011.png" alt="image-20231009162417011"  />
+</p>
+<p>在这个<code>prog-cgi</code>中就可以找到启动命令。</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009162619962.png" alt="image-20231009162619962"  />
+</p>
+<h3 id="解密逻辑">解密逻辑<a hidden class="anchor" aria-hidden="true" href="#解密逻辑">#</a></h3>
+<p>上面我们了解到了一些基本的信息，现在我们来说<em>dlink</em>固件解密的流程：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231009164642972.png" alt="image-20231009164642972"  />
+</p>
+<p>通过这个程序的流程，我们可以看到，这里处理了两个东西：</p>
+<ol>
+<li><strong>key</strong></li>
+<li><strong>firmware</strong></li>
+</ol>
+<h4 id="对key的处理">对key的处理<a hidden class="anchor" aria-hidden="true" href="#对key的处理">#</a></h4>
+<p>我们先说说对key的处理，我们进入这个<code>init_key</code>的函数：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012095446733.png" alt="image-20231012095446733"  />
+</p>
+<p>这里有四个参数，他们的作用如下：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012095456379.png" alt="image-20231012095456379"  />
+</p>
+<p>这里我们需要注意的是第一个、第三个、第四个参数。</p>
+<ul>
+<li>第一个参数是密钥的密文，32个字节</li>
+<li>第三个参数是密钥的密钥，16个字节</li>
+<li>第四个参数是AES的ivec向量，16个字节</li>
+</ul>
+<p>同时我们可以看到这三个参数全来自一个地方。<code>off_4130A0</code></p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012101928484.png" alt="image-20231012101928484"  />
+</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012101946277.png" alt="image-20231012101946277"  />
+</p>
+<pre tabindex="0"><code>ciphertext = &#39;C8D32F409CACB347C8D26FDCB9090B3C&#39;
+key = &#39;358790034519F8C8235DB6492839A73F&#39;
+ivec = &#39;98C9D8F0133D0695E2A709C8B69682D4&#39;
+</code></pre><p>这样我们就可以将固件的密钥给解密出来。</p>
+<h4 id="对固件的处理">对固件的处理<a hidden class="anchor" aria-hidden="true" href="#对固件的处理">#</a></h4>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012103018584.png" alt="image-20231012103018584"  />
+</p>
+<p>这里我们进入了<code>do_dec</code>函数，这个函数中的逻辑比较简单，简单来说，程序会分别计算固件解密前的hash和解密后的hash，然后再计算解密后的固件+长度+密钥的hash。</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012104212852.png" alt="image-20231012104212852"  />
+</p>
+<p>其实，如果我们只要求解密固件的话，我们只需要关注<code>dec</code>函数即可。</p>
+<p>但是在看<code>dec</code>函数之前我们需要先了解一下dlink固件的结构：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012142108834.png" alt="image-20231012142108834"  />
+</p>
+<p>可以看到，被加密的固件前0xDC个字节存放着magic字段、加密固件的长度、解密后固件的长度、<em>ivec</em>向量和hash值。</p>
+<p>了解了这个结构后，我们就可以看看二进制文件究竟干了什么：</p>
+<p><img loading="lazy" src="/vuln/dlink-firmware-dec.assets/image-20231012141419645.png" alt="image-20231012141419645"  />
+</p>
+<p>首先，要检查加密固件的magic字段。</p>
+<p>随后将<!-- raw HTML omitted -->密文部分<!-- raw HTML omitted -->+<!-- raw HTML omitted -->dec_img_len<!-- raw HTML omitted -->一起计算固件hash，并且和<!-- raw HTML omitted -->解密后固件的hash<!-- raw HTML omitted -->比较</p>
+<p>然后将<!-- raw HTML omitted -->密文<!-- raw HTML omitted -->+<!-- raw HTML omitted -->dec_img_len<!-- raw HTML omitted -->+<!-- raw HTML omitted -->密钥<!-- raw HTML omitted -->+<!-- raw HTML omitted -->ivec向量<!-- raw HTML omitted -->，进行解密固件</p>
+<p>随后再将<!-- raw HTML omitted -->解密后的固件<!-- raw HTML omitted -->+<!-- raw HTML omitted -->enc_img_len<!-- raw HTML omitted -->一起计算固件hash，并且和<!-- raw HTML omitted -->加密固件的hash<!-- raw HTML omitted -->进行比较</p>
+<p>最后再将<!-- raw HTML omitted -->解密后的固件<!-- raw HTML omitted -->+<!-- raw HTML omitted -->enc_img_len<!-- raw HTML omitted -->+<!-- raw HTML omitted -->密钥<!-- raw HTML omitted -->一起计算hash，并且和<!-- raw HTML omitted -->解密+长度+密钥的hash<!-- raw HTML omitted -->进行比较</p>
+<h3 id="解密脚本">解密脚本<a hidden class="anchor" aria-hidden="true" href="#解密脚本">#</a></h3>
+<p>现在我们知道解密需要哪些参数，并且参数是从哪里来的，那么我们直接解密就可以了：</p>
+<pre tabindex="0"><code>#!/usr/bin/python3
+import pathlib
+import sys
+from Crypto.Cipher import AES
+
+class Dlink_dec:
+    def __init__(self, inf, outf):
+        self.inf = pathlib.Path(inf)
+        self.outf = outf
+        self.dec_key = None
+        self.fw_text = None
+        self.ciphertext_offset = 0x6DC
+        self.ivec_offset = 0xc
+        self.ivec_len = 0x10
+        self.ivec = None
+        self.ciphertext_len_offset = 0x8
+        self.ciphertext_len_offset_len = 0x4
+        self.ciphertext_len = None
+
+        self.init_key()
+        self.get_ivec(self.inf)
+        self.get_ciphertext_len(self.inf)
+        self.get_fw_text(self.inf)
+        
+    def check_SHRS(self, file :pathlib.Path):
+        magic_bytes = file.open(&#39;rb&#39;).read(4)
+        if b&#34;SHRS&#34; == magic_bytes:
+            return True
+        else:
+            print(&#34;The Magic Bytes Check False!&#34;)
+            return False
+        
+    def init_key(self):
+        ciphertext = bytes.fromhex(&#39;C8D32F409CACB347C8D26FDCB9090B3C&#39;)
+        key = bytes.fromhex(&#39;358790034519F8C8235DB6492839A73F&#39;)
+        ivec = bytes.fromhex(&#39;98C9D8F0133D0695E2A709C8B69682D4&#39;)
+        
+        self.dec_key = AES.new(key, AES.MODE_CBC, ivec).decrypt(ciphertext)
+        
+        print(&#34;The key of ciphertext is {}&#34;.format(self.dec_key))
+        
+    def get_fw_text(self, file: pathlib.Path):
+        with open(file, &#34;rb&#34;) as fw:
+            fw.seek(self.ciphertext_offset)
+            self.fw_text = fw.read(self.ciphertext_len)
+
+        
+    def get_ivec(self, file: pathlib.Path):
+        with open(file, &#34;rb&#34;) as fw:
+            fw.seek(self.ivec_offset)
+            self.ivec = fw.read(self.ivec_len)
+    
+    def get_ciphertext_len(self, file: pathlib.Path):
+        with open(file, &#34;rb&#34;) as fw:
+            fw.seek(self.ciphertext_len_offset)
+            self.ciphertext_len = int.from_bytes(fw.read(self.ciphertext_len_offset_len), byteorder=&#39;big&#39;, signed=False)
+
+    
+    
+    def decrypt_fw(self):
+        dec_dlink = AES.new(self.dec_key, AES.MODE_CBC, self.ivec)
+        fw = dec_dlink.decrypt(self.fw_text)
+        pathlib.Path(self.outf).open(&#34;wb&#34;).write(fw)
+        
+        
+    
+    
+    
+        
+    def run(self):
+        if(self.check_SHRS(self.inf)):
+            self.decrypt_fw()
+            return True
+        else:
+            return False
+        
+        
+        
+        
+        
+def ex(*pri):
+    for i in pri:
+        print(i)
+    exit(0)        
+        
+def main():
+    try:
+        in_file = sys.argv[1]
+        out_file = sys.argv[2]
+    except:
+        print(&#34;USEG:&#34;)
+        print(&#34;     python3 {} in_file out_file&#34;.format(sys.argv[0]))
+        exit(0)
+        
+    decrypt = Dlink_dec(in_file, out_file)
+    
+    
+    if(decrypt.run()):
+        print(&#34;Dlink_fw decrypte Success!!!&#34;)  
+    else:
+        print(&#34;Decrypte False!!&#34;)
+        
+        
+if __name__ == &#39;__main__&#39; :
+    main()
+</code></pre><p>这里我直接将我写的py给放了出来，当然虽然py是我自己写的，但是有很多地方都和资料类似。并且因为最初目的是自己使用，所以就没有写计算和比较hash的部分。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

