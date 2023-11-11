@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>study on CAI dog</title>
+    <link>https://jellyfish-pro.github.io/study/</link>
+    <description>Recent content in study on CAI dog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language><atom:link href="https://jellyfish-pro.github.io/study/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>UAF原理分析</title>
+      <link>https://jellyfish-pro.github.io/study/uaf%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/study/uaf%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/</guid>
+      <description>UAF原理分析 正常的堆块流程 从逻辑上来说，我们认为的一个正常的chunk流程应该是：
+由malloc分配出来 再到正常使用chunk中的值 最后由free释放掉 #include&amp;lt;stdio.h&amp;gt;#include&amp;lt;stdlib.h&amp;gt;//创建一个结构体，其中包括一个函数指针struct demo{char string[8];void (*victim)();};int main(){struct demo *test;test = malloc(sizeof(struct demo)); //使用malloc分配chunktest-&amp;gt;victim=puts;test-&amp;gt;victim(&amp;#34;uaf test&amp;#34;); //正常使用chunk中的内容free(test); //使用后free掉return 0;} gcc test.c -o test 但对于chunk来说，free并不是结束，在free之后，我们任然可以继续使用或者修改chunk中的值。
+非正常的堆块流程 #include&amp;lt;stdio.h&amp;gt;#include&amp;lt;stdlib.h&amp;gt;//创建一个结构体，其中包括一个函数指针struct demo{char string[8];void (*victim)();};//正常流程下，结构体会调用这个函数void normal(struct demo *this){puts(&amp;#34;This is a normal function&amp;#34;);}//当触发UAF时，结构体会调用下面这个函数void abnormal(struct demo *this){puts(&amp;#34;hacked!&amp;#34;);}int main(){struct demo *test = malloc(sizeof(struct demo));test-&amp;gt;victim=normal;test-&amp;gt;victim(); //正常流程中，test-&amp;gt;victim指向normal函数free(test); //正常流程将test结构体free掉，意味着用户不会再使用test// test = NULL; //虽然test被free掉了，但并没有置零，导致我们还可以继续修改和访问这个堆块test-&amp;gt;victim=abnormal; //所以我们就可以修改test中的函数指针，达到任意地址访问的效果test-&amp;gt;victim(); //} gcc UAF.</description>
+    </item>
+    
+    <item>
+      <title>Ubuntu16安装pwn环境</title>
+      <link>https://jellyfish-pro.github.io/study/ubuntu16%E5%AE%89%E8%A3%85pwn%E7%8E%AF%E5%A2%83/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/study/ubuntu16%E5%AE%89%E8%A3%85pwn%E7%8E%AF%E5%A2%83/</guid>
+      <description>Ubuntu16安装pwn环境 写在前面 之前在学习栈溢出时，对环境的要求不太高。
+但是在学习到heap的时候，才发现不同版本的glibc对应的利用方式不相同。
+当然，有其他的方式可以在Ubuntu20中修改二进制文件的glibc版本，但是都多多少少有一些小问题。
+之前也尝试过在Ubuntu16上安装pwn，但由于pwntools和pwndbg已经不适配Ubuntu16，所以都以失败告终。
+这一次，在搜索了一些新的安装方式，总结了一些以前的失败经验，终于成功了。
+需要注意的点 其实，安装pwn工具最大的麻烦之处在于，Ubuntu16到Ubuntu20，正好经历了python2到python3的转变，同时python3.5和python3.6也有较大的差别。
+所以在Ubuntu16上安装pwn环境，最大的困难，就是解决python3的报错。
+配置Ubuntu16 ubuntu换源和pip换源就不会单独说了
+这里先安装依赖：
+sudo apt-get install zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev liblzma-dev libffi-dev libc6-dev libncurses5 libncurses5-dev libncursesw5 安装pwntools 上面说到了安装pwn环境最重要的是python版本。
+Ubuntu本来安装的时python3.5，而pwntools需要使用python3.6
+所以我们先安装python3.6，不过Ubuntu16已经不能使用apt来安装python3.6，所以我们只能使用源码升级:
+wget https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tar.xz 这里一定要选择3.6.10以上的版本，否则在引用pwn库时会遇到如下错误：
+ModuleNotFoundError: No module named &amp;#39;_curses&amp;#39; 随后准备编译安装：
+$ ./configure --enable-optimizations$ make$ sudo -H make install 随后重启一下，就可以看到系统的python3指向了python3.6.15：
+然后我们升级一下pip
+sudo python3 -m pip install --upgrade pip -i https://mirrors.ustc.edu.cn/pypi/web/simple 然后我们就可以安装pwntools了
+python3 -m pip install pwntools -i https://mirrors.</description>
+    </item>
+    
+    <item>
+      <title>堆的基础知识</title>
+      <link>https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/study/%E5%A0%86%E7%9A%84%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</guid>
+      <description>堆的基础知识 写在前面：
+因为ptmlloc版本的限制，不同版本的利用方法不同，所以记录一下：
+Ubuntu16.04——————————2.23Ubuntu18.04——————————2.27Ubuntu19.04——————————2.29Ubuntu20.04——————————2.30 chunk的结构： A、M、P为标志位
+由低到高位依次是：
+P：表示前一个chunk是否在使用。p=0表示pre_chunk is free，p=1表示pre_chunk in ues M：表示是否是由mmap分配的。 A：表示是否为主分配区。 当用户调用malloc函数时，malloc返回的是mem指针。而mem指针减去8个字节，就是chunk指针。
+而最后的Size_of_chunk也是下一个chunk的Size_of_pre_chunk，这里会涉及到空间复用，后面会详细讲解。
+空闲chunk的结构： 注意这里的M标志位没有了，因为由mmap函数分配的chunk释放后会有专门的流程进行回收。
+而这里的User_data已经不是非空闲的User_data了。
+chunk的空间复用 我们回到chunk的结构：
+出于节约内存的考虑，所以chunk中涉及到了空间复用，假设我们现在有两个相邻的chunk1和chunk2：
+而系统会根据chunk2的P标志位判断chunk1是否在使用。
+如果chunk1在使用，系统则会认为chunk2的Size of pre chunk是无意义的，故会让chunk1使用chunk2的Size of pre chunk（32位4字节，64位8字节）
+具体体现在，（以32位为例）如果用户想要申请8字节的堆块，我们以为的chunk的结构为：4(pre_chunk) + 4(chunk) + 8(user_data)
+但实际chunk的结构是：
+4(pre_chunk) + 4(chunk) + 4(user_data) + 4(chunk2的Size_of_pre_chunk)
+也就是我们从系统那里得到的只有4(pre_chunk) + 4(chunk) + 4(user_data) = 12个字节
+同时再进行一个0x8的内存对其，最终会得到0x10(16)个字节的chunk
+bins(&amp;lt;2.23) fastbin 不大于max_fast（小于0x80）的chunk被释放，则会进入fastbin
+在fastbin中不改变chunk的P标志位。
+当用户申请一个堆块，系统优先在fastbin中查找，如果没找到，再去其他的bins中查找。如果还没有的话，就做切割、brk、mmap。
+某些情况下，会将fastbin中的堆块合并，加入unsorted bin。
+unsorted bin 大于max_fast的chunk，或者在fastbin中合并的chunk，会被放入unsorted bin。
+当用户申请堆块时，ptmalloc会先查找fastbin，然后再找unsorted bin，再是其他的bins
+某些情况下，unsorted bin不满足条件，则会将unsorted bin加入small bin或者large bin</description>
+    </item>
+    
+  </channel>
+</rss>
