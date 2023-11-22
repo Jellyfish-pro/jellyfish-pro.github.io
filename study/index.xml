@@ -7,6 +7,23 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language><atom:link href="https://jellyfish-pro.github.io/study/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>heap_extend_and_overlapping</title>
+      <link>https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/study/heap_extend_and_overlapping/</guid>
+      <description>heap_extend_and_overlapping 原理讲解 这里我们可以假设有三个相邻的chunk，这时就有两种情况：
+这时我们通过特殊的方法，将chunk2_size更改为chunk2_size+chunk3_size，这时我们再free掉chunk2。
+**注意：**这里我们是先修改再free，但是先free再修改chunk2_size，然后再申请chunk2_size+chunk3_size大小的chunk，也可以达到同样的效果。
+就可以将chunk2+chunk3一起放入bins，这时我们再申请一个chunk2+chunk3大小的chunk，系统就会把chunk4返回给我们。
+那么这时候，我们就可以通过chunk4来控制chunk3，或者通过chunk3来控制chunk4的一部分。
+demo1 **注：**图片中chunk的大小和代码中chunk的大小可能不一致。
+p1 = malloc(0x500 - 8);	//减8的目的是因为复用p2 = malloc(0x500 - 8);p3 = malloc(0x80 - 8);memset(p1, &amp;#39;1&amp;#39;, 0x500 - 8);memset(p2, &amp;#39;2&amp;#39;, 0x500 - 8);memset(p3, &amp;#39;3&amp;#39;, 0x80 - 8);printf(&amp;#34;\nNow let&amp;#39;s free the chunk p2\n&amp;#34;);free(p2); 首先先创建了三个chunk，给了相对应的值，同时free掉p2：
+随后模拟攻击者更改了chunk2的size，再申请。
+int evil_chunk_size = 0x581;int evil_region_size = 0x580 - 8;/* VULNERABILITY */*(p2-1) = evil_chunk_size;/* VULNERABILITY */p4 = malloc(evil_region_size); 由于修改了chunk2的size并且申请了一个修改大小后的size，所以系统会将chunk2连着chunk3一起返回给我们：</description>
+    </item>
+    
+    <item>
       <title>UAF原理分析</title>
       <link>https://jellyfish-pro.github.io/study/uaf%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -41,6 +58,24 @@ $ ./configure --enable-optimizations$ make$ sudo -H make install 随后重启�
 然后我们升级一下pip
 sudo python3 -m pip install --upgrade pip -i https://mirrors.ustc.edu.cn/pypi/web/simple 然后我们就可以安装pwntools了
 python3 -m pip install pwntools -i https://mirrors.</description>
+    </item>
+    
+    <item>
+      <title>unlink原理解析</title>
+      <link>https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://jellyfish-pro.github.io/study/unlink%E5%8E%9F%E7%90%86/</guid>
+      <description>unlink原理解析 写在前面
+这里会从源码和demo的角度来分析unlink的原理和利用方式，具体的ctf例题请移步：#todo：例题连接
+源码分析 分析之前，还是放一个chunk的结构图：
+接下来是unlink时的源码(version == 2.38)：
+//比较当前chunk的size和下一个chunk的pre_size是否一致if (chunksize (p) != prev_size (next_chunk (p)))	malloc_printerr (&amp;#34;corrupted size vs. prev_size&amp;#34;);//将当前chunk的fd指针和bk指针单独拿出来mchunkptr fd = p-&amp;gt;fd;mchunkptr bk = p-&amp;gt;bk;//判断上个chunk的bk指针是否指向当前chunk，和下一个chunk的fd指针是否指向当前chunkif (__builtin_expect (fd-&amp;gt;bk != p || bk-&amp;gt;fd != p, 0))	malloc_printerr (&amp;#34;corrupted double-linked list&amp;#34;);//将当前chunk脱链fd-&amp;gt;bk = bk;	bk-&amp;gt;fd = fd; 可以看到源码中有两个if，源码干的事我愿称之为：证 明 我 是 我 自 己！
+第一个if通过比较chunk的size和下一个chunk的pre_size来确定chunk的大小是否正确 第二个if通过双向链表中上一个的下一个chunk指向当前chunk，和下一个的上一个chunk指向当前chunk，来证明当前chunk是当前chunk 两个if检查过后，就可以脱链了：让上一个chunk的bk指针指向下一个chunk，并让下一个chunk的fd指针指向上一个chunk。
+下面这张图是CTF Wiki中对脱链的解释：
+绕过检查 通过上面的两个if检查，我们知道了unlink时，检查的正常流程。
+接下来我们会通过一个来自于heap-exploitation的demo，来演示如何绕过这两个检查，并且说明绕过之后会发生什么：
+#include &amp;lt;unistd.h&amp;gt;#include &amp;lt;stdlib.</description>
     </item>
     
     <item>
